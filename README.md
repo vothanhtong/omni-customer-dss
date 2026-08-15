@@ -179,8 +179,15 @@ Nếu bạn muốn sử dụng giao diện phân tích đồ thị Python phụ 
 
 ---
 
-## 👥 7. Tác Giả & Bản Quyền
+## 👥 7. Thông Tin Đề Tài & Nhóm Nghiên Cứu (NCKH Sinh Viên)
 
-* **Chủ nhiệm đề tài / Tác giả:** Võ Thành Tống
-* **Đơn vị:** Nhóm Nghiên Cứu Khoa Học & Phân Tích Dữ Liệu Khách Hàng Đa Kênh
-* **Năm thực hiện:** 2026
+* **Tên đề tài:** *"Xây dựng hệ thống hỗ trợ ra quyết định phân tích và dự đoán hành vi khách hàng trong bán hàng đa kênh"*
+* **Đơn vị chủ trì:** Khoa Công nghệ thông tin – Trường Đại học Nha Trang *(Trưởng đơn vị: TS. Phạm Thị Thu Thúy)*
+* **Thời gian thực hiện:** 13 tháng (07/2026 – 07/2027)
+* **Cán bộ hướng dẫn khoa học:** **ThS. Nguyễn Thị Hương Lý** *(Giảng viên Khoa CNTT – ĐH Nha Trang)*
+* **Thành viên nhóm nghiên cứu sinh viên:**
+  1. 👑 **Hoàng Lê Thảo Nhi** – *Chủ nhiệm đề tài* (Lớp: 66.TTQL-1, Khoa CNTT, ĐH Nha Trang)
+  2. 💻 **Võ Hoài Buýt** – *Thành viên chính nghiên cứu* (Lớp: 65.TTQL-2, Khoa CNTT, ĐH Nha Trang)
+  3. 💻 **Võ Thanh Tòng** – *Thành viên chính nghiên cứu* (Lớp: 65.TTQL-2, Khoa CNTT, ĐH Nha Trang)
+
+> 📑 Xem toàn văn Thuyết minh đề tài NCKH tại: [`docs/THUYET_MINH_DE_TAI_NCKH.md`](file:///c:/Users/votha/omni-customer-dss/docs/THUYET_MINH_DE_TAI_NCKH.md) hoặc trực tiếp tại Tab **Thuyết Minh NCKH** trên Web Dashboard.

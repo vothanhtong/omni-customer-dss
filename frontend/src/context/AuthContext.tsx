@@ -26,19 +26,35 @@ const DEFAULT_ADMIN: User = {
   email: 'admin@omni-dss.vn',
   fullName: 'Võ Thành Tòng',
   role: 'admin',
-  organization: 'Trung Tâm Quản Trị Hệ Thống DSS & AI',
-  roleTitle: '👑 Quản Trị Viên Hệ Thống (System Admin)',
+  organization: 'Khoa CNTT - Trường Đại Học Nha Trang (65.TTQL-2)',
+  roleTitle: '👑 Thành Viên Chính NCKH & System Admin',
   createdAt: '2026-08-15',
   phone: '0912 345 678',
-  address: 'Tòa nhà Innovation Hub, Quận 1, TP. Hồ Chí Minh',
-  taxCode: '0314899988',
-  industry: 'Bán lẻ đa kênh (Omnichannel Retail)',
+  address: 'Trường Đại học Nha Trang, Số 02 Nguyễn Đình Chiểu, Nha Trang',
+  taxCode: '4200424567',
+  industry: 'Hệ Thống Thông Tin & Phân Tích DSS Bán Lẻ',
   storeCount: '20+ Chuỗi siêu thị toàn quốc',
   website: 'https://omni-dss.vn'
 };
 
+const DEFAULT_LEADER: User = {
+  id: 'USR_LEADER_02',
+  email: 'nhi.hlt.66ttql@ntu.edu.vn',
+  fullName: 'Hoàng Lê Thảo Nhi',
+  role: 'admin',
+  organization: 'Khoa CNTT - Trường Đại Học Nha Trang (66.TTQL-1)',
+  roleTitle: '👑 Chủ Nhiệm Đề Tài NCKH Sinh Viên',
+  createdAt: '2026-08-15',
+  phone: '0857 300 027',
+  address: '160/10 Đồng Nai, phường Nam Nha Trang, Khánh Hòa',
+  taxCode: '4200424567',
+  industry: 'Khai Phá Dữ Liệu & Học Máy Bán Lẻ Đa Kênh',
+  storeCount: 'Hệ thống Bán lẻ Đa kênh Toàn quốc',
+  website: 'https://ntu.edu.vn'
+};
+
 const DEFAULT_BUSINESS_USER: User = {
-  id: 'USR_BIZ_02',
+  id: 'USR_BIZ_05',
   email: 'business@retail.vn',
   fullName: 'Chuyên Viên Marketing & CSKH',
   role: 'business_user',
@@ -53,7 +69,7 @@ const DEFAULT_BUSINESS_USER: User = {
   website: 'https://omniretail.vn'
 };
 
-const INITIAL_DB_USERS: User[] = [DEFAULT_ADMIN, DEFAULT_BUSINESS_USER];
+const INITIAL_DB_USERS: User[] = [DEFAULT_ADMIN, DEFAULT_LEADER, DEFAULT_BUSINESS_USER];
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

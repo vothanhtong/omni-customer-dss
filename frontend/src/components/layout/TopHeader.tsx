@@ -22,6 +22,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ activeTab }) => {
     switch (activeTab) {
       case 'home': return 'Trang Chủ Chào Mừng';
       case 'overview': return 'Bảng Điều Khiển DSS';
+      case 'proposal': return 'Thuyết Minh Đề Tài NCKH';
       case 'rfm': return 'Phân Cụm RFM';
       case 'dss': return 'Dự Đoán & Động Cơ DSS';
       case 'alerts': return 'Cảnh Báo Churn Khẩn Cấp';

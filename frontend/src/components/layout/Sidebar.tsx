@@ -10,7 +10,9 @@ import {
   Briefcase,
   Sparkles,
   Building,
-  UserCog
+  UserCog,
+  FileText,
+  GraduationCap
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -52,6 +54,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
           >
             <LayoutDashboard size={18} />
             <span>Dashboard</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('proposal')}
+            className={`sidebar-nav-item ${activeTab === 'proposal' ? 'active' : ''}`}
+            title="Thuyết minh Đề tài Nghiên cứu Khoa học Sinh viên"
+          >
+            <GraduationCap size={18} color="#a855f7" />
+            <span>Thuyết Minh NCKH</span>
+            <span className="sidebar-pro-badge" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', borderColor: 'rgba(168, 85, 247, 0.3)' }}>NTU</span>
           </button>
 
           <button
@@ -143,7 +155,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
           )}
           <div className="sidebar-user-info">
             <div className="sidebar-user-name">
-              {currentUser?.fullName || 'Võ Thành Tống'}
+              {currentUser?.fullName || 'Võ Thanh Tòng'}
             </div>
             <div className="sidebar-user-role">
               {currentUser?.organization ? currentUser.organization.substring(0, 20) + '...' : currentUser?.roleTitle}

@@ -2805,34 +2805,379 @@ select.form-input option {
   width: 100%;
 }
 
-@media (max-width: 1100px) {
-  .features-grid-6 {
+/* ========================================================================= */
+/* 9. RESEARCH PROPOSAL TAB (THUYẾT MINH ĐỀ TÀI NCKH)                        */
+/* ========================================================================= */
+.research-proposal-page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.proposal-hero-card {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  padding: 40px 48px;
+  color: #ffffff;
+  box-shadow: 0 12px 40px rgba(49, 46, 129, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.proposal-university-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.university-logo-box {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.university-subtag {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #c7d2fe;
+}
+
+.proposal-main-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  line-height: 1.25;
+}
+
+.proposal-download-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  background: #ffffff !important;
+  color: #312e81 !important;
+  font-weight: 700;
+  border: none;
+}
+
+.proposal-download-btn:hover {
+  background: #f1f5f9 !important;
+  transform: translateY(-2px);
+}
+
+.proposal-topic-box {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 18px;
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.topic-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #facc15;
+}
+
+.topic-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1.4;
+  color: #ffffff;
+}
+
+.topic-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  font-size: 0.85rem;
+  color: #e0e7ff;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 12px;
+}
+
+/* Team Grid */
+.proposal-team-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.team-member-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.leader-card {
+  border-color: rgba(37, 99, 235, 0.4);
+  background: linear-gradient(to bottom, rgba(37, 99, 235, 0.04), var(--bg-card));
+}
+
+.advisor-card {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: linear-gradient(to bottom, rgba(245, 158, 11, 0.04), var(--bg-card));
+}
+
+.team-role-pill {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+.leader-pill {
+  background: rgba(37, 99, 235, 0.15);
+  color: #2563eb;
+  border: 1px solid rgba(37, 99, 235, 0.3);
+}
+
+.member-pill {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.advisor-pill {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.team-member-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.team-avatar-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.team-member-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.team-member-class {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.team-member-details {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 10px;
+}
+
+.team-member-tasks-summary {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  background: rgba(125, 125, 125, 0.05);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-top: auto;
+}
+
+/* Tasks Section */
+.proposal-tasks-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.tasks-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.tasks-filter-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tasks-search-input-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.tasks-search-input-box .search-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 12px 8px 32px;
+  color: var(--text-main);
+  font-size: 0.85rem;
+  outline: none;
+  width: 220px;
+}
+
+.tasks-search-input-box .search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--text-dim);
+}
+
+.filter-select {
+  padding: 8px 12px !important;
+  font-size: 0.85rem !important;
+}
+
+.phase-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 14px;
+}
+
+.phase-pill {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.phase-pill:hover {
+  border-color: #2563eb;
+  color: var(--text-main);
+}
+
+.phase-pill.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+.task-assignee-badge {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.lead-badge {
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+  border: 1px solid rgba(37, 99, 235, 0.25);
+}
+
+.support-badge {
+  background: rgba(125, 125, 125, 0.1);
+  color: var(--text-dim);
+}
+
+/* Deliverables Grid */
+.proposal-deliverables-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.proposal-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.proposal-list li {
+  position: relative;
+  padding-left: 18px;
+}
+
+.proposal-list li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #10b981;
+  font-weight: 800;
+}
+
+@media (max-width: 1200px) {
+  .proposal-team-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  .pipeline-steps-container {
-    flex-direction: column;
-  }
-  .pipeline-arrow-divider {
-    transform: rotate(90deg);
-  }
-  .welcome-kpi-strip {
-    grid-template-columns: repeat(2, 1fr);
+  .proposal-deliverables-grid {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 768px) {
-  .welcome-hero-banner {
-    padding: 36px 24px;
+  .proposal-hero-card {
+    padding: 28px 20px;
   }
-  .welcome-hero-title {
-    font-size: 1.9rem;
-  }
-  .features-grid-6 {
+  .proposal-team-grid {
     grid-template-columns: 1fr;
   }
-  .welcome-kpi-strip {
-    grid-template-columns: 1fr;
+  .proposal-university-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .proposal-download-btn {
+    margin-left: 0;
   }
 }
+
 
 

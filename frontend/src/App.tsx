@@ -9,6 +9,7 @@ import { ChatDrawer } from './components/chat/ChatDrawer';
 import { AuthPage } from './components/auth/AuthPage';
 import { ProfileModal } from './components/profile/ProfileModal';
 import { HomeWelcomeTab } from './components/tabs/HomeWelcomeTab';
+import { ResearchProposalTab } from './components/tabs/ResearchProposalTab';
 import { OverviewTab } from './components/tabs/OverviewTab';
 import { RFMSegmentationTab } from './components/tabs/RFMSegmentationTab';
 import { DSSPredictionTab } from './components/tabs/DSSPredictionTab';
@@ -37,6 +38,7 @@ const MainLayout: React.FC = () => {
         <main className="adminator-content-container">
           {activeTab === 'home' && <HomeWelcomeTab setActiveTab={setActiveTab} />}
           {activeTab === 'overview' && <OverviewTab />}
+          {activeTab === 'proposal' && <ResearchProposalTab />}
           {activeTab === 'rfm' && <RFMSegmentationTab />}
           {activeTab === 'dss' && <DSSPredictionTab />}
           {activeTab === 'alerts' && <HighRiskAlertsTab />}

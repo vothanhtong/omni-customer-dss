@@ -21,9 +21,9 @@ import {
   FileSpreadsheet,
   CheckCircle,
   HelpCircle,
-  FileText,
   Target,
-  Cpu
+  Cpu,
+  GraduationCap
 } from 'lucide-react';
 
 interface HomeWelcomeTabProps {
@@ -82,6 +82,17 @@ export const HomeWelcomeTab: React.FC<HomeWelcomeTabProps> = ({ setActiveTab }) 
               <Zap size={18} />
               <span>Khám Phá Dashboard Ngay</span>
               <ArrowRight size={18} />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('proposal')}
+              className="welcome-btn-glass hover-scale"
+              style={{ borderColor: 'rgba(168, 85, 247, 0.4)', color: '#c084fc' }}
+              title="Xem toàn văn Thuyết Minh Đề Tài NCKH Sinh Viên Đại Học Nha Trang"
+            >
+              <GraduationCap size={18} />
+              <span>Thuyết Minh NCKH (ĐH Nha Trang)</span>
             </button>
 
             <button
@@ -375,9 +386,9 @@ export const HomeWelcomeTab: React.FC<HomeWelcomeTabProps> = ({ setActiveTab }) 
             </button>
           </div>
 
-          <div className="bottom-cta-meta">
-            <span>© 2026 · Đề Tài Nghiên Cứu Khoa Học Hệ Thống DSS Bán Lẻ Đa Kênh</span>
-            <span>Tác giả: <strong>Võ Thành Tống</strong> · Cố Vấn: Trí Tuệ Nhân Tạo & Khoa Học Dữ Liệu</span>
+          <div className="bottom-cta-meta" style={{ flexDirection: 'column', gap: '6px' }}>
+            <span>© 2026 · Đề Tài Nghiên Cứu Khoa Học Sinh Viên: <strong>Xây dựng hệ thống hỗ trợ ra quyết định phân tích và dự đoán hành vi khách hàng trong bán hàng đa kênh</strong></span>
+            <span>Chủ nhiệm đề tài: <strong>Hoàng Lê Thảo Nhi</strong> · Thành viên chính: <strong>Võ Hoài Buýt, Võ Thanh Tòng</strong> · GVHD: <strong>ThS. Nguyễn Thị Hương Lý</strong> (Khoa CNTT - Trường Đại học Nha Trang)</span>
           </div>
         </div>
       </section>

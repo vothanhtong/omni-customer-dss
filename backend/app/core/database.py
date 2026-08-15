@@ -146,5 +146,85 @@ class MongoDBManager:
             logger.error(f"Lỗi khi lấy DSS logs từ MongoDB: {e}")
             return []
 
+    # --- User Management in MongoDB ---
+
+    async def create_user(self, user_data: Dict[str, Any]) -> bool:
+        """Lưu tài khoản người dùng / doanh nghiệp vào MongoDB collection 'users'"""
+        if not self.is_connected or self.db is None:
+            return False
+        try:
+            if self.driver_type == "Motor (Async)":
+                await self.db["users"].update_one(
+                    {"email": user_data["email"]},
+                    {"$set": user_data},
+                    upsert=True
+                )
+            else:
+                self.db["users"].update_one(
+                    {"email": user_data["email"]},
+                    {"$set": user_data},
+                    upsert=True
+                )
+            return True
+        except Exception as e:
+            logger.error(f"Lỗi khi lưu tài khoản user vào MongoDB: {e}")
+            return False
+
+    async def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        """Tìm tài khoản theo email từ MongoDB collection 'users'"""
+        if not self.is_connected or self.db is None:
+            return None
+        try:
+            if self.driver_type == "Motor (Async)":
+                return await self.db["users"].find_one({"email": email}, {"_id": 0})
+            else:
+                return self.db["users"].find_one({"email": email}, {"_id": 0})
+        except Exception as e:
+            logger.error(f"Lỗi khi tìm tài khoản user từ MongoDB: {e}")
+            return None
+
+    async def update_user_profile(self, email: str, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Cập nhật thông tin hồ sơ doanh nghiệp & avatar vào MongoDB collection 'users'"""
+        if not self.is_connected or self.db is None:
+            return None
+        try:
+            clean_update = {k: v for k, v in update_data.items() if v is not None}
+            clean_update["email"] = email.lower().strip()
+            if self.driver_type == "Motor (Async)":
+                await self.db["users"].update_one(
+                    {"email": email.lower().strip()},
+                    {"$set": clean_update},
+                    upsert=True
+                )
+                return await self.db["users"].find_one({"email": email.lower().strip()}, {"_id": 0})
+            else:
+                self.db["users"].update_one(
+                    {"email": email.lower().strip()},
+                    {"$set": clean_update},
+                    upsert=True
+                )
+                return self.db["users"].find_one({"email": email.lower().strip()}, {"_id": 0})
+        except Exception as e:
+            logger.error(f"Lỗi khi cập nhật hồ sơ user trong MongoDB: {e}")
+            return None
+
+    async def get_all_users(self) -> List[Dict[str, Any]]:
+        """Lấy danh sách tất cả tài khoản người dùng từ MongoDB"""
+        if not self.is_connected or self.db is None:
+            return []
+        try:
+            if self.driver_type == "Motor (Async)":
+                cursor = self.db["users"].find({}, {"_id": 0}).sort("_id", -1)
+                return await cursor.to_list(length=100)
+            else:
+                cursor = self.db["users"].find({}, {"_id": 0}).sort("_id", -1)
+                return list(cursor)
+        except Exception as e:
+            logger.error(f"Lỗi khi lấy danh sách users từ MongoDB: {e}")
+            return []
+
 
 db_manager = MongoDBManager()
+
+
+

@@ -1,8 +1,17 @@
 from datetime import datetime, timezone
+# pyrefly: ignore [missing-import]
 from fastapi import APIRouter, HTTPException, status
-from backend.app.schemas.churn import ChurnPredictionRequest, ChurnPredictionResponse
-from backend.app.core.ml_models import ml_manager
-from backend.app.core.database import db_manager
+
+try:
+    from backend.app.schemas.churn import ChurnPredictionRequest, ChurnPredictionResponse
+    from backend.app.schemas import dump_model
+    from backend.app.core.ml_models import ml_manager
+    from backend.app.core.database import db_manager
+except ImportError:
+    from app.schemas.churn import ChurnPredictionRequest, ChurnPredictionResponse
+    from app.schemas import dump_model
+    from app.core.ml_models import ml_manager
+    from app.core.database import db_manager
 
 router = APIRouter(prefix="/api/churn", tags=["Churn Prediction"])
 
@@ -29,8 +38,8 @@ async def predict_churn(payload: ChurnPredictionRequest):
         
         # Async save to MongoDB
         await db_manager.save_churn_prediction({
-            **payload.dict(),
-            **response_data.dict(),
+            **dump_model(payload),
+            **dump_model(response_data),
             "timestamp": datetime.now(timezone.utc).isoformat()
         })
         

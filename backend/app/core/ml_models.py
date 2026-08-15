@@ -3,7 +3,9 @@ ML Model Management Module - Handles loading and inference for RFM & Churn model
 """
 
 import os
+# pyrefly: ignore 
 import joblib
+# pyrefly: ignore 
 import numpy as np
 import pandas as pd
 
@@ -38,14 +40,17 @@ class MLModelManager:
             print(f"⚠️ Lỗi khi tải mô hình ML: {str(e)}")
 
     def predict_rfm_segment(self, recency: int, frequency: int, monetary: float) -> dict:
-        """Dự đoán phân khúc RFM bằng K-Means"""
-        if not self.kmeans_model:
-            raise RuntimeError("Mô hình ML chưa được tải.")
+        """Dự đoán phân khúc RFM bằng K-Means (có Auto-load fallback)"""
+        if self.kmeans_model is None or self.scaler_rfm is None:
+            self.load_models()
+
+        if self.kmeans_model is None:
+            raise RuntimeError("Không thể nạp mô hình K-Means RFM.")
 
         rfm_input = pd.DataFrame([[recency, frequency, monetary]], columns=["recency", "frequency", "monetary"])
         rfm_scaled = self.scaler_rfm.transform(rfm_input)
         cluster_id = int(self.kmeans_model.predict(rfm_scaled)[0])
-        segment_name = self.segment_map.get(cluster_id, "Không xác định")
+        segment_name = self.segment_map.get(cluster_id, "Không xác định") if self.segment_map else f"Cluster {cluster_id}"
 
         return {
             "cluster_id": cluster_id,
@@ -61,9 +66,12 @@ class MLModelManager:
         app_logins_last_month: int,
         days_since_last_support: int
     ) -> dict:
-        """Dự đoán xác suất Churn bằng XGBoost / GradientBoosting"""
-        if not self.xgb_model:
-            raise RuntimeError("Mô hình ML chưa được tải.")
+        """Dự đoán xác suất Churn bằng XGBoost (có Auto-load fallback)"""
+        if self.xgb_model is None or self.scaler_churn is None or self.churn_features is None:
+            self.load_models()
+
+        if self.xgb_model is None:
+            raise RuntimeError("Không thể nạp mô hình XGBoost Churn.")
 
         input_data = pd.DataFrame([[
             recency, frequency, monetary, support_tickets, app_logins_last_month, days_since_last_support

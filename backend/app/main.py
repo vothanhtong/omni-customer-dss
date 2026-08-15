@@ -2,17 +2,35 @@
 FastAPI Backend REST API Application Entrypoint with MongoDB Integration
 """
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+import sys
+import os
 from contextlib import asynccontextmanager
+# pyrefly: ignore 
+from fastapi import FastAPI
+# pyrefly: ignore
+from fastapi.middleware.cors import CORSMiddleware
 
-from backend.app.core.ml_models import ml_manager
-from backend.app.core.database import db_manager
-from backend.app.core.config import MONGODB_URL, MONGODB_DB_NAME
+# Đảm bảo đường dẫn gốc dự án luôn có trong sys.path
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 
-from backend.app.api.rfm import router as rfm_router
-from backend.app.api.churn import router as churn_router
-from backend.app.api.dss import router as dss_router
+try:
+    from backend.app.core.ml_models import ml_manager
+    from backend.app.core.database import db_manager
+    from backend.app.core.config import MONGODB_URL, MONGODB_DB_NAME
+    from backend.app.api.rfm import router as rfm_router
+    from backend.app.api.churn import router as churn_router
+    from backend.app.api.dss import router as dss_router
+    from backend.app.api.auth import router as auth_router
+except ImportError:
+    from app.core.ml_models import ml_manager
+    from app.core.database import db_manager
+    from app.core.config import MONGODB_URL, MONGODB_DB_NAME
+    from app.api.rfm import router as rfm_router
+    from app.api.churn import router as churn_router
+    from app.api.dss import router as dss_router
+    from app.api.auth import router as auth_router
 
 
 @asynccontextmanager
@@ -34,7 +52,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Customer Analytics & Churn Prediction API",
     description="REST API tích hợp K-Means RFM Segmentation, XGBoost Churn Prediction, DSS Engine và MongoDB Database",
-    version="1.1.0",
+    version="1.2.0",
     lifespan=lifespan
 )
 
@@ -48,6 +66,7 @@ app.add_middleware(
 )
 
 # Include API Routers
+app.include_router(auth_router)
 app.include_router(rfm_router)
 app.include_router(churn_router)
 app.include_router(dss_router)

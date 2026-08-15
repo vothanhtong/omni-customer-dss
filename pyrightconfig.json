@@ -1,0 +1,12 @@
+{
+  "include": [
+    ".",
+    "backend"
+  ],
+  "extraPaths": [
+    ".",
+    "backend"
+  ],
+  "pythonVersion": "3.14",
+  "typeCheckingMode": "basic"
+}

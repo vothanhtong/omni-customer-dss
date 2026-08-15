@@ -1,72 +1,356 @@
-import React from 'react';
-import { Users, UserCheck, AlertTriangle, TrendingUp, Zap, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import {
+  Eye,
+  FileText,
+  Users,
+  BarChart2,
+  TrendingUp,
+  Download,
+  Plus,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
+  CheckCircle2,
+  AlertTriangle,
+  Send,
+  Zap,
+  ArrowRight
+} from 'lucide-react';
 
 export const OverviewTab: React.FC = () => {
-  const stats = [
-    { label: 'Tổng Số Khách Hàng', value: '1,000', icon: Users, color: '#6366f1' },
-    { label: 'Khách Hàng VIP', value: '254', icon: UserCheck, color: '#10b981' },
-    { label: 'Rủi Ro Churn Cao (>70%)', value: '142', icon: AlertTriangle, color: '#f43f5e' },
-    { label: 'Doanh Thu Tỷ Lệ (VNĐ)', value: '18.4 tỷ', icon: TrendingUp, color: '#06b6d4' },
-  ];
+  const { currentUser } = useAuth();
+  const [tasks, setTasks] = useState([
+    { id: 1, text: 'Gửi Voucher giảm giá 20% cho 142 khách hàng rủi ro cao (Churn > 70%)', done: false },
+    { id: 2, text: 'Phân bổ chuyên viên CSKH hỗ trợ trực tiếp 28 tài khoản VIP đang sụt giảm tương tác', done: true },
+    { id: 3, text: 'Đồng bộ dữ liệu giao dịch mới từ POS Cửa hàng & Sàn TMĐT vào MongoDB Atlas', done: false },
+  ]);
+
+  const toggleTask = (id: number) => {
+    setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t));
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Stat Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
-        {stats.map((stat, idx) => {
-          const Icon = stat.icon;
-          return (
-            <div key={idx} className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '12px',
-                background: `${stat.color}20`,
-                border: `1px solid ${stat.color}40`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: stat.color
-              }}>
-                <Icon size={24} />
-              </div>
-              <div>
-                <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>{stat.label}</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{stat.value}</div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Feature Highlights */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-        <div className="glass-card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-            <Zap style={{ color: '#6366f1' }} size={22} />
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Mô Hình Học Máy Integrated ML</h3>
-          </div>
-          <p style={{ color: '#9ca3af', fontSize: '0.92rem', marginBottom: '12px' }}>
-            Hệ thống tự động phân cụm nhóm khách hàng RFM (Recency, Frequency, Monetary) bằng thuật toán <strong>K-Means Clustering</strong> và dự đoán xác suất rời bỏ (Churn) bằng <strong>XGBoost / Gradient Boosting</strong>.
+    <div className="adminator-overview-page">
+      {/* ========================================================================= */}
+      {/* 1. GREETING & EXPORT HEADER                                               */}
+      {/* ========================================================================= */}
+      <div className="overview-header-row">
+        <div>
+          <div className="overview-date-tag">MONDAY · AUGUST 15 · 2026</div>
+          <h1 className="overview-welcome-title">
+            Welcome back, <span className="highlight-blue">{currentUser?.fullName?.split(' ')[0] || 'John'}</span>
+          </h1>
+          <p className="overview-welcome-desc">
+            Total visits are <span className="highlight-green">+10%</span> week over week, unique visitors steady, and bounce rate holding at 33%. Two new regions came online overnight.
           </p>
-          <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.9rem', color: '#cbd5e1' }}>
-            <li>✓ Độ chính xác mô hình Churn: ~91.5%</li>
-            <li>✓ Cập nhật dữ liệu thời gian thực qua REST API</li>
-          </ul>
         </div>
 
-        <div className="glass-card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-            <ShieldCheck style={{ color: '#10b981' }} size={22} />
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Động Cơ Quyết Định DSS Rules</h3>
+        <div className="overview-action-buttons">
+          <button className="adminator-btn-secondary" title="Xuất báo cáo PDF/Excel">
+            <Download size={16} /> Export
+          </button>
+          <button className="adminator-btn-primary" title="Tạo báo cáo hoặc kích hoạt chiến dịch CSKH">
+            <Plus size={16} /> New report
+          </button>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 2. HÀNG 4 KPI CARDS ADMINATOR                                            */}
+      {/* ========================================================================= */}
+      <div className="overview-kpi-grid">
+        {/* Card 1: Total visits */}
+        <div className="adminator-kpi-card">
+          <div className="kpi-card-header">
+            <div className="kpi-icon-label">
+              <Eye size={18} color="#10b981" />
+              <span>Total visits</span>
+            </div>
+            <span className="kpi-pill pill-green">
+              <ArrowUpRight size={13} /> +10%
+            </span>
           </div>
-          <p style={{ color: '#9ca3af', fontSize: '0.92rem', marginBottom: '12px' }}>
-            DSS Engine kết hợp kết quả phân cụm ML và tỷ lệ Churn để tự động sinh ra các cảnh báo rủi ro (HIGH/MEDIUM/LOW) cùng gợi ý hành động marketing chính xác.
-          </p>
-          <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.9rem', color: '#cbd5e1' }}>
-            <li>✓ Tự động hóa chiến dịch khuyến mãi & CSKH</li>
-            <li>✓ Tối ưu hóa chi phí giữ chân khách hàng VIP</li>
-          </ul>
+          <div className="kpi-big-value">
+            1.24<span className="kpi-unit">M</span>
+          </div>
+          <div className="kpi-footer-text text-green">
+            ↗ up from <strong>1.12M</strong> last week
+          </div>
+        </div>
+
+        {/* Card 2: Page views */}
+        <div className="adminator-kpi-card">
+          <div className="kpi-card-header">
+            <div className="kpi-icon-label">
+              <FileText size={18} color="#f43f5e" />
+              <span>Page views</span>
+            </div>
+            <span className="kpi-pill pill-red">
+              <ArrowDownRight size={13} /> -7%
+            </span>
+          </div>
+          <div className="kpi-big-value">
+            4.08<span className="kpi-unit">M</span>
+          </div>
+          <div className="kpi-footer-text text-red">
+            ↘ down from <strong>4.39M</strong> last week
+          </div>
+        </div>
+
+        {/* Card 3: Unique visitors */}
+        <div className="adminator-kpi-card">
+          <div className="kpi-card-header">
+            <div className="kpi-icon-label">
+              <Users size={18} color="#8b5cf6" />
+              <span>Unique visitors</span>
+            </div>
+            <span className="kpi-pill pill-purple">
+              <Minus size={13} /> ~12%
+            </span>
+          </div>
+          <div className="kpi-big-value">
+            842<span className="kpi-unit">K</span>
+          </div>
+          <div className="kpi-footer-text text-purple">
+            ─ holding around <strong>835K</strong> last week
+          </div>
+        </div>
+
+        {/* Card 4: Bounce rate */}
+        <div className="adminator-kpi-card">
+          <div className="kpi-card-header">
+            <div className="kpi-icon-label">
+              <BarChart2 size={18} color="#3b82f6" />
+              <span>Bounce rate</span>
+            </div>
+            <span className="kpi-pill pill-blue">
+              ─ steady
+            </span>
+          </div>
+          <div className="kpi-big-value">
+            33<span className="kpi-unit">%</span>
+          </div>
+          <div className="kpi-footer-text text-blue">
+            ─ matching <strong>33%</strong> last week
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3. KHUNG PHÂN TÍCH THEO KÊNH BÁN HÀNG & TIẾN ĐỘ VÒNG TRÒN                */}
+      {/* ========================================================================= */}
+      <div className="adminator-large-panel">
+        <div className="panel-header-row">
+          <div>
+            <div className="panel-subtitle-tag">GEOGRAPHY · OMNICHANNEL DISTRIBUTION</div>
+            <h3 className="panel-main-title">Site visits & Channel Performance</h3>
+          </div>
+          <a href="#view-report" onClick={(e) => e.preventDefault()} className="panel-link-action">
+            View report <ArrowRight size={14} />
+          </a>
+        </div>
+
+        {/* 4 Progress Bars */}
+        <div className="geography-metrics-row">
+          {/* Item 1 */}
+          <div className="geo-metric-item">
+            <div className="geo-metric-header">
+              <div className="geo-bullet-label">
+                <span className="bullet-dot dot-purple"></span> United States (POS)
+              </div>
+            </div>
+            <div className="geo-metric-value-row">
+              <span className="geo-main-val">100K</span>
+              <span className="geo-sub-pct">50%</span>
+            </div>
+            <div className="geo-progress-track">
+              <div className="geo-progress-bar bar-purple" style={{ width: '50%' }}></div>
+            </div>
+          </div>
+
+          {/* Item 2 */}
+          <div className="geo-metric-item">
+            <div className="geo-metric-header">
+              <div className="geo-bullet-label">
+                <span className="bullet-dot dot-green"></span> Europe (Website)
+              </div>
+            </div>
+            <div className="geo-metric-value-row">
+              <span className="geo-main-val">1M</span>
+              <span className="geo-sub-pct">80%</span>
+            </div>
+            <div className="geo-progress-track">
+              <div className="geo-progress-bar bar-green" style={{ width: '80%' }}></div>
+            </div>
+          </div>
+
+          {/* Item 3 */}
+          <div className="geo-metric-item">
+            <div className="geo-metric-header">
+              <div className="geo-bullet-label">
+                <span className="bullet-dot dot-blue"></span> Australia (Shopee/TMĐT)
+              </div>
+            </div>
+            <div className="geo-metric-value-row">
+              <span className="geo-main-val">450K</span>
+              <span className="geo-sub-pct">40%</span>
+            </div>
+            <div className="geo-progress-track">
+              <div className="geo-progress-bar bar-blue" style={{ width: '40%' }}></div>
+            </div>
+          </div>
+
+          {/* Item 4 */}
+          <div className="geo-metric-item">
+            <div className="geo-metric-header">
+              <div className="geo-bullet-label">
+                <span className="bullet-dot dot-gray"></span> India (Direct/Khác)
+              </div>
+            </div>
+            <div className="geo-metric-value-row">
+              <span className="geo-main-val">1B</span>
+              <span className="geo-sub-pct">90%</span>
+            </div>
+            <div className="geo-progress-track">
+              <div className="geo-progress-bar bar-gray" style={{ width: '90%' }}></div>
+            </div>
+          </div>
+        </div>
+
+        {/* 3 Circular Donut Progress Rings */}
+        <div className="circular-rings-container">
+          {/* Ring 1: 75% New Users */}
+          <div className="circular-ring-item">
+            <div className="donut-wrapper">
+              <svg className="donut-svg" viewBox="0 0 36 36">
+                <path
+                  className="donut-bg"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <path
+                  className="donut-fill ring-orange"
+                  strokeDasharray="75, 100"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+              </svg>
+              <div className="donut-center-text">75%</div>
+            </div>
+            <div className="donut-label-box">
+              <div className="donut-title">New users</div>
+              <div className="donut-sub">first-time visitors</div>
+            </div>
+          </div>
+
+          {/* Ring 2: 50% New Purchases */}
+          <div className="circular-ring-item">
+            <div className="donut-wrapper">
+              <svg className="donut-svg" viewBox="0 0 36 36">
+                <path
+                  className="donut-bg"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <path
+                  className="donut-fill ring-cyan"
+                  strokeDasharray="50, 100"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+              </svg>
+              <div className="donut-center-text">50%</div>
+            </div>
+            <div className="donut-label-box">
+              <div className="donut-title">New purchases</div>
+              <div className="donut-sub">from new visits</div>
+            </div>
+          </div>
+
+          {/* Ring 3: 90% Bounce Rate / Accuracy */}
+          <div className="circular-ring-item">
+            <div className="donut-wrapper">
+              <svg className="donut-svg" viewBox="0 0 36 36">
+                <path
+                  className="donut-bg"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <path
+                  className="donut-fill ring-yellow"
+                  strokeDasharray="90, 100"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+              </svg>
+              <div className="donut-center-text">90%</div>
+            </div>
+            <div className="donut-label-box">
+              <div className="donut-title">Bounce rate</div>
+              <div className="donut-sub">avg engagement</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 4. HÀNG DƯỚI: MONTHLY STATS & TODO LIST (NHƯ ẢNH MẪU)                     */}
+      {/* ========================================================================= */}
+      <div className="overview-bottom-grid">
+        {/* Left Card: Performance Monthly Stats */}
+        <div className="adminator-bottom-card">
+          <div className="bottom-card-header">
+            <div>
+              <div className="bottom-card-tag">PERFORMANCE</div>
+              <h4 className="bottom-card-title">Monthly stats</h4>
+            </div>
+            <span className="bottom-card-date">April 2026</span>
+          </div>
+
+          <div className="monthly-stats-body">
+            <div className="stat-row">
+              <span className="stat-label">Doanh thu bán hàng tích lũy</span>
+              <span className="stat-val highlight-green">18.4 Tỷ VNĐ (+14.2%)</span>
+            </div>
+            <div className="stat-row">
+              <span className="stat-label">Tổng khách hàng phân cụm (RFM)</span>
+              <span className="stat-val">10,480 Tài khoản</span>
+            </div>
+            <div className="stat-row">
+              <span className="stat-label">Độ chính xác mô hình Churn (XGBoost)</span>
+              <span className="stat-val highlight-blue">91.50% (ROC-AUC: 0.9575)</span>
+            </div>
+            <div className="stat-row">
+              <span className="stat-label">Độ trễ phản hồi quyết định DSS</span>
+              <span className="stat-val text-green">&lt; 14ms (Async Real-time)</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Card: Personal Todo List / DSS Action Triggers */}
+        <div className="adminator-bottom-card">
+          <div className="bottom-card-header">
+            <div>
+              <div className="bottom-card-tag">PERSONAL / DSS ACTIONS</div>
+              <h4 className="bottom-card-title">Todo list</h4>
+            </div>
+            <button className="add-task-btn" onClick={() => alert('Thêm công việc hoặc chiến dịch tiếp thị mới!')}>
+              Add task +
+            </button>
+          </div>
+
+          <div className="todo-list-body">
+            {tasks.map((task) => (
+              <div
+                key={task.id}
+                onClick={() => toggleTask(task.id)}
+                className={`todo-item ${task.done ? 'done' : ''}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={task.done}
+                  onChange={() => {}}
+                  className="todo-checkbox"
+                />
+                <span className="todo-text">{task.text}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

@@ -1,10 +1,21 @@
 import sys
 import os
-import uvicorn
+
+# Cấu hình UTF-8 cho console Windows
+if sys.platform.startswith('win'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
 
 # Thêm thư mục gốc dự án vào python path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 
+# pyrefly: ignore
+import uvicorn
 from backend.app.core.config import API_HOST, API_PORT
 
 if __name__ == "__main__":

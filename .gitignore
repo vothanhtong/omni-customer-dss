@@ -71,3 +71,9 @@ Desktop.ini
 tmp/
 temp/
 *.log
+
+# --- Secrets & build artifacts (security hardening) ---
+backend/.env
+**/__pycache__/
+*.pyc
+*.pkl

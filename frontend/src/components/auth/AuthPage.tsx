@@ -88,9 +88,17 @@ export const AuthPage: React.FC = () => {
     }
   };
 
-  const handleQuickDemo = (roleType: RoleType) => {
-    quickLoginAs(roleType);
-    showToast(`Đã đăng nhập nhanh với vai trò ${roleType === 'admin' ? 'Quản Trị Viên Hệ Thống' : 'Người Dùng Doanh Nghiệp'}!`);
+  const handleQuickDemo = async (roleType: RoleType) => {
+    setErrorMsg(null);
+    setLoading(true);
+    try {
+      await quickLoginAs(roleType);
+      showToast(`Đã đăng nhập nhanh với vai trò ${roleType === 'admin' ? 'Quản Trị Viên Hệ Thống' : 'Người Dùng Doanh Nghiệp'}!`);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Không thể đăng nhập demo.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSendForgotEmail = (e: React.FormEvent) => {

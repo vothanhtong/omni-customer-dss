@@ -7,6 +7,12 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__
 if PROJECT_DIR not in sys.path:
     sys.path.insert(0, PROJECT_DIR)
 
+from backend.app.core.ml_models import _ARTIFACTS  # noqa: E402
+from backend.app.core.config import SAVED_MODELS_DIR  # noqa: E402
+
+MODELS_READY = all(os.path.exists(os.path.join(SAVED_MODELS_DIR, f)) for f in _ARTIFACTS.values())
+requires_models = pytest.mark.skipif(not MODELS_READY, reason="Chưa huấn luyện mô hình (python backend/train_pipeline.py)")
+
 
 @pytest.fixture(scope="session")
 def client():

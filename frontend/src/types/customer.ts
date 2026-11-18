@@ -12,13 +12,22 @@ export interface RFMResponse {
   monetary: number;
 }
 
+export type SalesChannel = 'Facebook Fanpage' | 'Shopee' | 'TikTok Shop' | 'Unknown/Other' | 'Website';
+export type Region = 'Miền Bắc' | 'Miền Nam' | 'Miền Trung' | 'Chưa xác định';
+
 export interface ChurnRequest {
-  recency: number;
-  frequency: number;
+  recency_days: number;
+  total_orders: number;
+  completed_orders: number;
   monetary: number;
-  support_tickets: number;
-  app_logins_last_month: number;
-  days_since_last_support: number;
+  returned_orders?: number;
+  cancelled_orders?: number;
+  ad_orders?: number;
+  processing_hours_mean?: number | null;
+  num_channels?: number;
+  tenure_days?: number;
+  primary_channel?: SalesChannel;
+  region?: Region;
 }
 
 export interface ChurnResponse {
@@ -26,6 +35,7 @@ export interface ChurnResponse {
   churn_probability_pct: number;
   churn_prediction: number;
   risk_level: 'High Risk' | 'Medium Risk' | 'Low Risk' | string;
+  model_name: string;
 }
 
 export interface DSSRequest {
@@ -41,9 +51,10 @@ export interface DSSResponse {
   customer_id: string;
   rfm_segment: string;
   churn_risk_pct: number;
-  alert_level: 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO' | string;
+  alert_level: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | string;
   warnings: string[];
   recommendations: string[];
+  matched_rules?: string[];
 }
 
 export interface CustomerSummary {

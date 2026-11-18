@@ -77,3 +77,7 @@ backend/.env
 **/__pycache__/
 *.pyc
 *.pkl
+
+# --- Dữ liệu thô chứa thông tin cá nhân khách hàng (tên, SĐT) & đầu ra chứa customer_id ---
+Cleaned_data/
+backend/saved_models/scored_customers.csv

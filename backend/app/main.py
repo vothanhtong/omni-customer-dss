@@ -23,6 +23,7 @@ try:
     from backend.app.api.churn import router as churn_router
     from backend.app.api.dss import router as dss_router
     from backend.app.api.auth import router as auth_router
+    from backend.app.api.metrics import router as metrics_router
 except ImportError:
     from app.core.ml_models import ml_manager
     from app.core.database import db_manager
@@ -31,6 +32,7 @@ except ImportError:
     from app.api.churn import router as churn_router
     from app.api.dss import router as dss_router
     from app.api.auth import router as auth_router
+    from app.api.metrics import router as metrics_router
 
 
 @asynccontextmanager
@@ -51,7 +53,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Customer Analytics & Churn Prediction API",
-    description="REST API tích hợp K-Means RFM Segmentation, XGBoost Churn Prediction, DSS Engine và MongoDB Database",
+    description="REST API tích hợp K-Means RFM Segmentation, Churn Prediction (LR/DT/RF/XGBoost), DSS Engine và MongoDB Database",
     version="1.2.0",
     lifespan=lifespan
 )
@@ -72,6 +74,7 @@ app.include_router(auth_router)
 app.include_router(rfm_router)
 app.include_router(churn_router)
 app.include_router(dss_router)
+app.include_router(metrics_router)
 
 
 @app.get("/", tags=["Health Check"])

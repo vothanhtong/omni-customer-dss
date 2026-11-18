@@ -131,6 +131,20 @@ class MongoDBManager:
             logger.error(f"Lỗi khi lưu DSS log vào MongoDB: {e}")
             return False
 
+    async def save_dss_logs(self, records: List[Dict[str, Any]]) -> bool:
+        """Lưu nhiều nhật ký DSS trong MỘT lệnh insert_many (thay vì vòng lặp insert_one)."""
+        if not records or not self.is_connected or self.db is None:
+            return False
+        try:
+            if self.driver_type == "Motor (Async)":
+                await self.db["dss_logs"].insert_many(records, ordered=False)
+            else:
+                self.db["dss_logs"].insert_many(records, ordered=False)
+            return True
+        except Exception as e:
+            logger.error(f"Lỗi khi lưu batch DSS logs vào MongoDB: {e}")
+            return False
+
     async def get_recent_dss_logs(self, limit: int = 50) -> List[Dict[str, Any]]:
         """Lấy danh sách nhật ký DSS từ MongoDB"""
         if not self.is_connected or self.db is None:

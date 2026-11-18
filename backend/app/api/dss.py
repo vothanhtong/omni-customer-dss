@@ -49,13 +49,12 @@ async def evaluate_dss_batch(payload: List[DSSRequest]):
         res_list = evaluate_batch_dss(customers_list)
         response_data = [DSSResponse(**item) for item in res_list]
         
-        # Async save batch to MongoDB
-        for p, r in zip(payload, response_data):
-            await db_manager.save_dss_log({
-                **dump_model(p),
-                **dump_model(r),
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            })
+        # Lưu toàn bộ batch vào MongoDB bằng một lệnh insert_many
+        ts = datetime.now(timezone.utc).isoformat()
+        await db_manager.save_dss_logs([
+            {**inp, **dump_model(r), "timestamp": ts}
+            for inp, r in zip(customers_list, response_data)
+        ])
             
         return response_data
     except Exception as e:

@@ -1,20 +1,40 @@
 import React, { useState } from 'react';
-import { predictChurn, evaluateDSS } from '../../services/api';
-import { ChurnResponse, DSSResponse } from '../../types/customer';
+import { predictChurn, predictRFM, evaluateDSS, getApiErrorMessage } from '../../services/api';
+import { ChurnResponse, DSSResponse, SalesChannel, Region } from '../../types/customer';
 import { BrainCircuit, Send, AlertTriangle, Lightbulb } from 'lucide-react';
 
+const AUTO_SEGMENT = '__auto__';
+const CHANNELS: SalesChannel[] = ['Facebook Fanpage', 'Website', 'TikTok Shop', 'Shopee', 'Unknown/Other'];
+const REGIONS: Region[] = ['Miền Nam', 'Miền Bắc', 'Miền Trung', 'Chưa xác định'];
+
+const NumberField: React.FC<{ label: string; value: number; onChange: (v: number) => void; min?: number; step?: number }> = ({
+  label, value, onChange, min = 0, step = 1
+}) => (
+  <div className="form-group">
+    <label className="form-label">{label}</label>
+    <input type="number" className="form-input" value={value} min={min} step={step} onChange={(e) => onChange(Number(e.target.value))} required />
+  </div>
+);
+
 export const DSSPredictionTab: React.FC = () => {
-  const [recency, setRecency] = useState<number>(45);
-  const [frequency, setFrequency] = useState<number>(3);
-  const [monetary, setMonetary] = useState<number>(1200);
-  const [supportTickets, setSupportTickets] = useState<number>(4);
-  const [appLogins, setAppLogins] = useState<number>(2);
-  const [daysSinceSupport, setDaysSinceSupport] = useState<number>(10);
-  const [segment, setSegment] = useState<string>('Cần chăm sóc');
+  // Đặc trưng hành vi trong cửa sổ quan sát (khớp dữ liệu huấn luyện)
+  const [recencyDays, setRecencyDays] = useState<number>(20);
+  const [totalOrders, setTotalOrders] = useState<number>(2);
+  const [completedOrders, setCompletedOrders] = useState<number>(1);
+  const [monetary, setMonetary] = useState<number>(350000);
+  const [returnedOrders, setReturnedOrders] = useState<number>(1);
+  const [cancelledOrders, setCancelledOrders] = useState<number>(0);
+  const [adOrders, setAdOrders] = useState<number>(1);
+  const [numChannels, setNumChannels] = useState<number>(1);
+  const [tenureDays, setTenureDays] = useState<number>(15);
+  const [channel, setChannel] = useState<SalesChannel>('Facebook Fanpage');
+  const [region, setRegion] = useState<Region>('Miền Nam');
+  const [segment, setSegment] = useState<string>(AUTO_SEGMENT);
 
   const [loading, setLoading] = useState<boolean>(false);
   const [churnRes, setChurnRes] = useState<ChurnResponse | null>(null);
   const [dssRes, setDssRes] = useState<DSSResponse | null>(null);
+  const [usedSegment, setUsedSegment] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handlePredictAndEvaluate = async (e: React.FormEvent) => {
@@ -22,36 +42,48 @@ export const DSSPredictionTab: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      // 1. Predict Churn
-      const churnData = await predictChurn({
-        recency,
-        frequency,
-        monetary,
-        support_tickets: supportTickets,
-        app_logins_last_month: appLogins,
-        days_since_last_support: daysSinceSupport,
-      });
+      // 1. Dự đoán Churn và (tuỳ chọn) phân cụm RFM song song
+      const [churnData, rfmData] = await Promise.all([
+        predictChurn({
+          recency_days: recencyDays,
+          total_orders: totalOrders,
+          completed_orders: completedOrders,
+          monetary,
+          returned_orders: returnedOrders,
+          cancelled_orders: cancelledOrders,
+          ad_orders: adOrders,
+          num_channels: numChannels,
+          tenure_days: tenureDays,
+          primary_channel: channel,
+          region,
+        }),
+        segment === AUTO_SEGMENT
+          ? predictRFM({ recency: recencyDays, frequency: totalOrders, monetary })
+          : Promise.resolve(null),
+      ]);
       setChurnRes(churnData);
+      const rfmSegment = rfmData ? rfmData.segment_name : segment;
+      setUsedSegment(rfmSegment);
 
-      // 2. Evaluate DSS Rules
+      // 2. Đánh giá bảng luật DSS
       const dssData = await evaluateDSS({
         customer_id: 'CUST_DEMO',
-        rfm_segment: segment,
+        rfm_segment: rfmSegment,
         churn_risk: churnData.churn_probability,
-        recency,
-        frequency,
+        recency: recencyDays,
+        frequency: totalOrders,
         monetary,
       });
       setDssRes(dssData);
     } catch (err: any) {
-      setError(err.message || 'Không thể kết nối đến Backend API.');
+      setError(getApiErrorMessage(err, 'Không thể kết nối đến Backend API.'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
       {/* Form Input */}
       <div className="glass-card">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
@@ -61,44 +93,48 @@ export const DSSPredictionTab: React.FC = () => {
 
         <form onSubmit={handlePredictAndEvaluate}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div className="form-group">
-              <label className="form-label">Recency (ngày):</label>
-              <input type="number" className="form-input" value={recency} onChange={(e) => setRecency(Number(e.target.value))} min={0} required />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Frequency (lần):</label>
-              <input type="number" className="form-input" value={frequency} onChange={(e) => setFrequency(Number(e.target.value))} min={1} required />
-            </div>
+            <NumberField label="Recency (ngày từ đơn gần nhất):" value={recencyDays} onChange={setRecencyDays} step={0.5} />
+            <NumberField label="Tổng số đơn:" value={totalOrders} onChange={setTotalOrders} min={1} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <NumberField label="Số đơn thành công:" value={completedOrders} onChange={setCompletedOrders} />
+            <NumberField label="Giá trị đơn thành công (VNĐ):" value={monetary} onChange={setMonetary} step={1000} />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+            <NumberField label="Đơn hoàn trả:" value={returnedOrders} onChange={setReturnedOrders} />
+            <NumberField label="Đơn bị hủy:" value={cancelledOrders} onChange={setCancelledOrders} />
+            <NumberField label="Đơn từ quảng cáo:" value={adOrders} onChange={setAdOrders} />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <NumberField label="Số kênh đã mua:" value={numChannels} onChange={setNumChannels} min={1} />
+            <NumberField label="Tenure (ngày đơn đầu → gần nhất):" value={tenureDays} onChange={setTenureDays} step={0.5} />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
             <div className="form-group">
-              <label className="form-label">Monetary (VNĐ):</label>
-              <input type="number" className="form-input" value={monetary} onChange={(e) => setMonetary(Number(e.target.value))} min={0} required />
+              <label className="form-label">Kênh mua chính:</label>
+              <select className="form-input" value={channel} onChange={(e) => setChannel(e.target.value as SalesChannel)}>
+                {CHANNELS.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Vùng miền:</label>
+              <select className="form-input" value={region} onChange={(e) => setRegion(e.target.value as Region)}>
+                {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
             </div>
             <div className="form-group">
               <label className="form-label">Phân Khúc RFM:</label>
               <select className="form-input" value={segment} onChange={(e) => setSegment(e.target.value)}>
+                <option value={AUTO_SEGMENT}>Tự động (K-Means)</option>
                 <option value="VIP">VIP</option>
                 <option value="Tiềm năng">Tiềm năng</option>
                 <option value="Cần chăm sóc">Cần chăm sóc</option>
                 <option value="Rủi ro">Rủi ro</option>
               </select>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-            <div className="form-group">
-              <label className="form-label">Support Tickets:</label>
-              <input type="number" className="form-input" value={supportTickets} onChange={(e) => setSupportTickets(Number(e.target.value))} min={0} required />
-            </div>
-            <div className="form-group">
-              <label className="form-label">App Logins:</label>
-              <input type="number" className="form-input" value={appLogins} onChange={(e) => setAppLogins(Number(e.target.value))} min={0} required />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Days Support:</label>
-              <input type="number" className="form-input" value={daysSinceSupport} onChange={(e) => setDaysSinceSupport(Number(e.target.value))} min={0} required />
             </div>
           </div>
 
@@ -119,7 +155,7 @@ export const DSSPredictionTab: React.FC = () => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {/* XGBoost Churn Result */}
         <div className="glass-card">
-          <h4 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#9ca3af', marginBottom: '12px' }}>Dự Đoán Churn (XGBoost)</h4>
+          <h4 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#9ca3af', marginBottom: '12px' }}>Dự Đoán Churn ({churnRes?.model_name ?? 'mô hình tốt nhất'})</h4>
           {churnRes ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
@@ -147,9 +183,14 @@ export const DSSPredictionTab: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {/* Alert Level Badge */}
               <div>
-                <span className={`badge ${dssRes.alert_level === 'HIGH' ? 'badge-high' : dssRes.alert_level === 'MEDIUM' ? 'badge-medium' : 'badge-low'}`}>
-                  Mức Cảnh Báo: {dssRes.alert_level}
+                <span className={`badge ${dssRes.alert_level === 'CRITICAL' || dssRes.alert_level === 'HIGH' ? 'badge-high' : dssRes.alert_level === 'MEDIUM' ? 'badge-medium' : 'badge-low'}`}>
+                  Mức Cảnh Báo: {dssRes.alert_level === 'CRITICAL' ? '🚨 CRITICAL' : dssRes.alert_level}
                 </span>
+                <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '8px' }}>
+                  Phân khúc: <strong>{dssRes.rfm_segment}</strong>
+                  {segment === AUTO_SEGMENT && usedSegment ? ' (K-Means)' : ''}
+                  {dssRes.matched_rules && dssRes.matched_rules.length > 0 && <> · Luật khớp: {dssRes.matched_rules.join(', ')}</>}
+                </div>
               </div>
 
               {/* Warnings */}

@@ -7,6 +7,7 @@ import {
   DSSRequest,
   DSSResponse
 } from '../types/customer';
+import { ModelMetrics } from '../types/metrics';
 
 export const API_ROOT_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
 const API_BASE_URL = `${API_ROOT_URL}/api`;
@@ -98,5 +99,10 @@ export const evaluateDSS = async (data: DSSRequest): Promise<DSSResponse> => {
 
 export const evaluateBatchDSS = async (data: DSSRequest[]): Promise<DSSResponse[]> => {
   const response = await apiClient.post<DSSResponse[]>('/dss/evaluate-batch', data);
+  return response.data;
+};
+
+export const getModelMetrics = async (): Promise<ModelMetrics> => {
+  const response = await apiClient.get<ModelMetrics>('/metrics');
   return response.data;
 };

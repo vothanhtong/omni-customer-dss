@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Cpu, Database, CheckCircle2, Sliders, Layers, BarChart3, Users, RefreshCw, Sparkles, Activity, Server, HardDrive } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useModelMetrics, fmt, pct } from '../../context/MetricsContext';
 
 export const AdminManagementTab: React.FC = () => {
   const { allRegisteredUsers, refreshUsers } = useAuth();
+  const { metrics, error: metricsError, reload: reloadMetrics } = useModelMetrics();
+  const churn = metrics?.churn;
   const [activeSubTab, setActiveSubTab] = useState<'models' | 'database' | 'users' | 'system'>('models');
   const [tuningStatus, setTuningStatus] = useState<string>('IDLE');
 
@@ -82,7 +85,7 @@ export const AdminManagementTab: React.FC = () => {
             <Cpu size={18} color="#6366f1" />
           </div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', marginTop: '6px' }}>2 Models</div>
-          <div style={{ fontSize: '0.75rem', color: '#818cf8', marginTop: '2px' }}>XGBoost & K-Means (K=4)</div>
+          <div style={{ fontSize: '0.75rem', color: '#818cf8', marginTop: '2px' }}>{churn?.best_model ?? '—'} & K-Means (K={metrics?.rfm.k ?? 4})</div>
         </div>
 
         <div className="glass-card" style={{ padding: '16px' }}>
@@ -133,83 +136,133 @@ export const AdminManagementTab: React.FC = () => {
 
       {/* SUBTAB 1: QUẢN TRỊ MÔ HÌNH ML & TUNING */}
       {activeSubTab === 'models' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div className="glass-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-              <Cpu style={{ color: '#6366f1' }} size={22} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Cấu Hình & Tối Ưu Mô Hình (GridSearchCV)</h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Cpu style={{ color: '#6366f1' }} size={22} />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>So Sánh 4 Mô Hình Churn (GridSearchCV 5-fold · Test Out-of-Time)</h3>
+              </div>
+              <button className="btn-secondary" onClick={reloadMetrics} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <RefreshCw size={14} /> Tải lại chỉ số
+              </button>
             </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '14px', borderRadius: '10px', borderLeft: '3px solid #10b981' }}>
-                <div style={{ fontSize: '0.9rem', color: '#10b981', fontWeight: 700 }}>XGBoost Classifier (Mô hình chính)</div>
-                <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '4px' }}>
-                  • Siêu tham số: n_estimators=100, max_depth=4, learning_rate=0.05, subsample=0.8
-                </div>
-                <div style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 700, marginTop: '6px' }}>
-                  🎯 ROC-AUC: 0.9575 | F1-Score: 0.8654 (Đánh giá 5-Fold Cross Validation)
-                </div>
-              </div>
 
-              <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '14px', borderRadius: '10px', borderLeft: '3px solid #6366f1' }}>
-                <div style={{ fontSize: '0.9rem', color: '#818cf8', fontWeight: 700 }}>Random Forest Classifier (So sánh)</div>
-                <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '4px' }}>
-                  • Siêu tham số: n_estimators=100, max_depth=8, min_samples_split=2
-                </div>
-                <div style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 700, marginTop: '6px' }}>
-                  🎯 ROC-AUC: 0.9421 | F1-Score: 0.8333
-                </div>
+            {!churn ? (
+              <div style={{ color: '#f59e0b', fontSize: '0.9rem' }}>
+                {metricsError ?? 'Đang tải chỉ số mô hình...'}
               </div>
-
-              <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '14px', borderRadius: '10px', borderLeft: '3px solid #06b6d4' }}>
-                <div style={{ fontSize: '0.9rem', color: '#06b6d4', fontWeight: 700 }}>K-Means RFM Clustering (Phân cụm)</div>
-                <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '4px' }}>
-                  • Phân bố 4 cụm: VIP, Tiềm năng, Cần chăm sóc, Rủi ro
+            ) : (
+              <>
+                <div style={{ fontSize: '0.82rem', color: '#9ca3af', marginBottom: '12px', lineHeight: 1.6 }}>
+                  Train: <strong>{churn.n_train.toLocaleString('vi-VN')}</strong> KH (churn {pct(churn.churn_rate_train)}) · Test:{' '}
+                  <strong>{churn.n_test.toLocaleString('vi-VN')}</strong> KH (churn {pct(churn.churn_rate_test)}) · Cửa sổ kết quả:{' '}
+                  {churn.outcome_window.days.toFixed(1)} ngày · Baseline đoán toàn bộ “churn”: accuracy {fmt(churn.majority_baseline_accuracy_test)} ·
+                  Chọn mô hình theo: {churn.selection_criterion}
                 </div>
-                <div style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 700, marginTop: '6px' }}>
-                  🎯 Xác định K=4 qua phương pháp Elbow (SSE / Inertia)
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', fontSize: '0.82rem', borderCollapse: 'collapse', minWidth: '760px' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)', textAlign: 'right', color: '#9ca3af' }}>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>Mô hình</th>
+                        <th style={{ padding: '8px' }}>CV AUC</th>
+                        <th style={{ padding: '8px' }}>Accuracy</th>
+                        <th style={{ padding: '8px' }}>Bal. Acc</th>
+                        <th style={{ padding: '8px' }}>Precision</th>
+                        <th style={{ padding: '8px' }}>Recall</th>
+                        <th style={{ padding: '8px' }}>F1</th>
+                        <th style={{ padding: '8px' }}>ROC-AUC</th>
+                        <th style={{ padding: '8px' }} title="Recall của lớp thiểu số: khách quay lại mua">Recall (quay lại)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {churn.models.map((m) => {
+                        const isBest = m.model === churn.best_model;
+                        return (
+                          <tr key={m.model} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)', textAlign: 'right', background: isBest ? 'rgba(16, 185, 129, 0.08)' : undefined }}>
+                            <td style={{ padding: '8px', textAlign: 'left', color: isBest ? '#10b981' : '#ffffff', fontWeight: 700 }}>
+                              {m.model} {isBest && '★'}
+                              <div style={{ fontSize: '0.72rem', color: '#9ca3af', fontWeight: 400 }}>
+                                {Object.entries(m.best_params).map(([k, v]) => `${k}=${v}`).join(', ')}
+                              </div>
+                            </td>
+                            <td style={{ padding: '8px' }}>{fmt(m.cv_roc_auc_mean)} ± {fmt(m.cv_roc_auc_std, 3)}</td>
+                            <td style={{ padding: '8px' }}>{fmt(m.test.accuracy)}</td>
+                            <td style={{ padding: '8px' }}>{fmt(m.test.balanced_accuracy)}</td>
+                            <td style={{ padding: '8px' }}>{fmt(m.test.precision)}</td>
+                            <td style={{ padding: '8px' }}>{fmt(m.test.recall)}</td>
+                            <td style={{ padding: '8px' }}>{fmt(m.test.f1_score)}</td>
+                            <td style={{ padding: '8px', fontWeight: 700 }}>{fmt(m.test.roc_auc)}</td>
+                            <td style={{ padding: '8px' }}>{fmt(m.test.retained_recall)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-              </div>
-            </div>
+                <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '8px' }}>
+                  ★ Mô hình đang phục vụ API. Ngưỡng quyết định {churn.decision_threshold}. Cập nhật: {new Date(metrics!.generated_at).toLocaleString('vi-VN')}
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="glass-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-              <BarChart3 style={{ color: '#10b981' }} size={22} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Trạng Thái Tệp Mô Hình (Saved Artifacts)</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+            <div className="glass-card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <BarChart3 style={{ color: '#10b981' }} size={22} />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Đặc Trưng Quan Trọng ({churn?.best_model ?? '—'})</h3>
+              </div>
+              {churn?.best_model_feature_importance.slice(0, 8).map((f) => (
+                <div key={f.feature} style={{ marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                    <span>{f.feature}</span>
+                    <span>{pct(f.importance, 1)}</span>
+                  </div>
+                  <div style={{ height: '6px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px' }}>
+                    <div style={{ width: `${Math.min(100, f.importance * 100 / (churn.best_model_feature_importance[0]?.importance || 1))}%`, height: '100%', background: '#10b981', borderRadius: '3px' }} />
+                  </div>
+                </div>
+              ))}
             </div>
 
-            <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)', textAlign: 'left', color: '#9ca3af' }}>
-                  <th style={{ padding: '10px 8px' }}>Tệp Mô Hình</th>
-                  <th style={{ padding: '10px 8px' }}>Kích Thước</th>
-                  <th style={{ padding: '10px 8px' }}>Trạng Thái</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                  <td style={{ padding: '10px 8px', color: '#ffffff', fontWeight: 600 }}>xgb_churn.pkl</td>
-                  <td style={{ padding: '10px 8px', color: '#9ca3af' }}>167.6 KB</td>
-                  <td style={{ padding: '10px 8px', color: '#10b981' }}>🟢 Active</td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                  <td style={{ padding: '10px 8px', color: '#ffffff', fontWeight: 600 }}>kmeans_rfm.pkl</td>
-                  <td style={{ padding: '10px 8px', color: '#9ca3af' }}>40.8 KB</td>
-                  <td style={{ padding: '10px 8px', color: '#10b981' }}>🟢 Active</td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                  <td style={{ padding: '10px 8px', color: '#ffffff', fontWeight: 600 }}>scaler_rfm.pkl</td>
-                  <td style={{ padding: '10px 8px', color: '#9ca3af' }}>927 B</td>
-                  <td style={{ padding: '10px 8px', color: '#10b981' }}>🟢 Active</td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                  <td style={{ padding: '10px 8px', color: '#ffffff', fontWeight: 600 }}>scaler_churn.pkl</td>
-                  <td style={{ padding: '10px 8px', color: '#9ca3af' }}>1.07 KB</td>
-                  <td style={{ padding: '10px 8px', color: '#10b981' }}>🟢 Active</td>
-                </tr>
-              </tbody>
-            </table>
+            <div className="glass-card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <Layers style={{ color: '#06b6d4' }} size={22} />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>K-Means RFM (K={metrics?.rfm.k ?? 4})</h3>
+              </div>
+              {metrics && (
+                <>
+                  <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)', textAlign: 'right', color: '#9ca3af' }}>
+                        <th style={{ padding: '6px', textAlign: 'left' }}>Phân khúc</th>
+                        <th style={{ padding: '6px' }}>Số KH</th>
+                        <th style={{ padding: '6px' }}>R (ngày)</th>
+                        <th style={{ padding: '6px' }}>F</th>
+                        <th style={{ padding: '6px' }}>M (VNĐ)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {metrics.rfm.segments.map((s) => (
+                        <tr key={s.segment} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)', textAlign: 'right' }}>
+                          <td style={{ padding: '6px', textAlign: 'left', color: '#ffffff', fontWeight: 600 }}>{s.segment}</td>
+                          <td style={{ padding: '6px' }}>{s.customers.toLocaleString('vi-VN')} ({pct(s.share, 1)})</td>
+                          <td style={{ padding: '6px' }}>{s.mean_recency_days}</td>
+                          <td style={{ padding: '6px' }}>{s.mean_frequency}</td>
+                          <td style={{ padding: '6px' }}>{Math.round(s.mean_monetary_vnd).toLocaleString('vi-VN')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '8px', lineHeight: 1.5 }}>
+                    Gán nhãn: {metrics.rfm.labeling_rule}
+                    <br />
+                    Silhouette: {metrics.rfm.silhouette.map((x) => `k=${x.k}: ${fmt(x.silhouette, 3)}`).join(' · ')}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -231,19 +284,19 @@ export const AdminManagementTab: React.FC = () => {
 
             <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '16px', borderRadius: '12px' }}>
               <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>Collection: rfm_predictions</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#ffffff', marginTop: '4px' }}>10,480 Bản Ghi</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#ffffff', marginTop: '4px' }}>Chưa thống kê</div>
               <div style={{ fontSize: '0.75rem', color: '#cbd5e1', marginTop: '4px' }}>Lưu lịch sử phân cụm K-Means</div>
             </div>
 
             <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '16px', borderRadius: '12px' }}>
               <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>Collection: churn_predictions</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#ffffff', marginTop: '4px' }}>10,480 Bản Ghi</div>
-              <div style={{ fontSize: '0.75rem', color: '#cbd5e1', marginTop: '4px' }}>Lưu lịch sử dự đoán XGBoost</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#ffffff', marginTop: '4px' }}>Chưa thống kê</div>
+              <div style={{ fontSize: '0.75rem', color: '#cbd5e1', marginTop: '4px' }}>Lưu lịch sử dự đoán Churn</div>
             </div>
 
             <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '16px', borderRadius: '12px' }}>
               <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>Collection: dss_logs</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#f59e0b', marginTop: '4px' }}>2,340 Bản Ghi</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#f59e0b', marginTop: '4px' }}>Chưa thống kê</div>
               <div style={{ fontSize: '0.75rem', color: '#cbd5e1', marginTop: '4px' }}>Lưu nhật ký cảnh báo & đề xuất DSS</div>
             </div>
           </div>

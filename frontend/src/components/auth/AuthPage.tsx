@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useModelMetrics, fmt } from '../../context/MetricsContext';
 import { RoleType } from '../../types/auth';
 import {
   Mail,
@@ -26,6 +27,7 @@ import {
 
 export const AuthPage: React.FC = () => {
   const { login, register, quickLoginAs, closeAuthPage } = useAuth();
+  const { metrics } = useModelMetrics();
 
   const [isLogin, setIsLogin] = useState<boolean>(true);
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -172,8 +174,12 @@ export const AuthPage: React.FC = () => {
             <div className="highlight-pill-item">
               <div className="highlight-icon-box"><CheckCircle size={16} color="#34d399" /></div>
               <div>
-                <div className="highlight-title">Mô Hình Học Máy Chuẩn Xác</div>
-                <div className="highlight-desc">XGBoost 91.50% Accuracy & ROC-AUC 0.9575</div>
+                <div className="highlight-title">Mô Hình Học Máy Kiểm Định Trên Dữ Liệu Thật</div>
+                <div className="highlight-desc">
+                  {metrics
+                    ? `${metrics.churn.best_model} · ROC-AUC ${fmt(metrics.churn.best_model_test.roc_auc)} (test out-of-time, ${metrics.churn.n_test.toLocaleString('vi-VN')} KH)`
+                    : 'So sánh LR · Decision Tree · Random Forest · XGBoost'}
+                </div>
               </div>
             </div>
 

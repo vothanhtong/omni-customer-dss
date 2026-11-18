@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useModelMetrics, fmt } from './MetricsContext';
 
 export interface AppNotification {
   id: string;
@@ -64,14 +65,6 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
     actionLabel: 'Phân bổ CSKH',
   },
   {
-    id: 'NOTIF_03',
-    title: '🟢 Cập Nhật Mô Hình XGBoost',
-    message: 'Tái huấn luyện mô hình Churn hoàn tất với ROC-AUC đạt 0.9575 trên 10,480 bản ghi MongoDB.',
-    type: 'success',
-    time: '1 giờ trước',
-    read: false,
-  },
-  {
     id: 'NOTIF_04',
     title: '🔵 Đồng Bộ Dữ Liệu Đa Kênh',
     message: 'Dữ liệu từ POS Cửa hàng & Sàn TMĐT đã được đồng bộ vào MongoDB Atlas Cloud thành công.',
@@ -109,6 +102,26 @@ export const NotificationChatProvider: React.FC<{ children: React.ReactNode }> =
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [activeChatChannel, setActiveChatChannel] = useState<'dss_ai' | 'cskh_team'>('dss_ai');
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState<boolean>(false);
+
+  const { metrics } = useModelMetrics();
+
+  // Thông báo cập nhật mô hình lấy số liệu thật từ /api/metrics
+  useEffect(() => {
+    if (!metrics) return;
+    const c = metrics.churn;
+    const best = c.best_model_test;
+    const notif: AppNotification = {
+      id: 'NOTIF_MODEL',
+      title: `🟢 Mô Hình Churn: ${c.best_model}`,
+      message:
+        `Huấn luyện trên ${c.n_train.toLocaleString('vi-VN')} KH, kiểm định out-of-time trên ${c.n_test.toLocaleString('vi-VN')} KH: ` +
+        `ROC-AUC ${fmt(best.roc_auc)}, F1 ${fmt(best.f1_score)}, Recall lớp quay lại ${fmt(best.retained_recall)}.`,
+      type: 'success',
+      time: new Date(metrics.generated_at).toLocaleString('vi-VN'),
+      read: false,
+    };
+    setNotifications((prev) => [notif, ...prev.filter((n) => n.id !== 'NOTIF_MODEL')]);
+  }, [metrics]);
 
   const unreadNotificationCount = notifications.filter(n => !n.read).length;
   const unreadChatCount = 3;
@@ -151,7 +164,10 @@ export const NotificationChatProvider: React.FC<{ children: React.ReactNode }> =
         } else if (lower.includes('vip') || lower.includes('giữ chân')) {
           replyText = '💎 Chiến lược VIP: Mời khách hàng tham gia câu lạc bộ đặc quyền VIP, tích lũy điểm thưởng kép và gửi quà tặng cá nhân hóa vào dịp đặc biệt.';
         } else if (lower.includes('rfm') || lower.includes('phân cụm')) {
-          replyText = '🎯 Phân cụm RFM: Hiện tại K-Means đang chia tập khách hàng thành 4 nhóm tối ưu: VIP (25.4%), Tiềm năng (28.1%), Cần chăm sóc (26.3%), Rủi ro (20.2%).';
+          replyText = metrics
+            ? `🎯 Phân cụm RFM: K-Means (K=${metrics.rfm.k}) trên ${metrics.rfm.n_customers.toLocaleString('vi-VN')} khách hàng: ` +
+              metrics.rfm.segments.map((s) => `${s.segment} (${(s.share * 100).toFixed(1)}%)`).join(', ') + '.'
+            : '🎯 Phân cụm RFM: chưa tải được kết quả phân cụm từ máy chủ.';
         } else {
           replyText = '💡 Đề xuất DSS: Dựa trên mô hình học máy XGBoost, việc gửi email kích hoạt giỏ hàng kèm ưu đãi Freeship vào lúc 19:00 - 21:00 giúp tăng tỷ lệ quay lại mua sắm thêm 34%.';
         }

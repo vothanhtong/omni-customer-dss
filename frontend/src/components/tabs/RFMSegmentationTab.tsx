@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { predictRFM } from '../../services/api';
+import { predictRFM, getApiErrorMessage } from '../../services/api';
 import { RFMResponse } from '../../types/customer';
 import { PieChart, Send, CheckCircle2 } from 'lucide-react';
 
 export const RFMSegmentationTab: React.FC = () => {
-  const [recency, setRecency] = useState<number>(30);
-  const [frequency, setFrequency] = useState<number>(12);
-  const [monetary, setMonetary] = useState<number>(8500);
+  // Giá trị mặc định theo phân bố dữ liệu thật (đơn vị VNĐ)
+  const [recency, setRecency] = useState<number>(10);
+  const [frequency, setFrequency] = useState<number>(2);
+  const [monetary, setMonetary] = useState<number>(600000);
   const [loading, setLoading] = useState<boolean>(false);
   const [result, setResult] = useState<RFMResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +20,7 @@ export const RFMSegmentationTab: React.FC = () => {
       const res = await predictRFM({ recency, frequency, monetary });
       setResult(res);
     } catch (err: any) {
-      setError(err.message || 'Không thể kết nối đến Backend API.');
+      setError(getApiErrorMessage(err, 'Không thể kết nối đến Backend API.'));
     } finally {
       setLoading(false);
     }
@@ -60,7 +61,7 @@ export const RFMSegmentationTab: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Monetary (Tổng giá trị chi tiêu VNĐ / k VNĐ):</label>
+            <label className="form-label">Monetary (Tổng giá trị đơn thành công, VNĐ):</label>
             <input
               type="number"
               className="form-input"

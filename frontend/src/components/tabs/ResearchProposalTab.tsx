@@ -54,7 +54,7 @@ const RESEARCH_TASKS: TaskItem[] = [
   { id: 't3_3', phaseId: 3, phaseName: 'Nội dung 3: Mô hình ML & Phân cụm', code: 'CV 3.3', name: 'Áp dụng K-Means để phân khúc khách hàng (RFM Clustering)', deliverable: 'Kết quả 4 cụm RFM', timeline: '12/2026 - 01/2027', assignees: [{ name: 'Hoàng Lê Thảo Nhi', role: 'lead' }], status: 'COMPLETED', linkedFeature: 'RFM Segmentation' },
   { id: 't3_4', phaseId: 3, phaseName: 'Nội dung 3: Mô hình ML & Phân cụm', code: 'CV 3.4', name: 'Tuning và tối ưu siêu tham số mô hình (Optuna)', deliverable: 'Mô hình tối ưu', timeline: '01/2027 - 02/2027', assignees: [{ name: 'Võ Thanh Tòng', role: 'lead' }, { name: 'Võ Hoài Buýt', role: 'support' }], status: 'COMPLETED' },
   { id: 't3_5', phaseId: 3, phaseName: 'Nội dung 3: Mô hình ML & Phân cụm', code: 'CV 3.5', name: 'Đánh giá mô hình bằng các chỉ số (Accuracy, Precision, Recall, F1)', deliverable: 'Báo cáo đánh giá mô hình', timeline: '01/2027 - 02/2027', assignees: [{ name: 'Hoàng Lê Thảo Nhi', role: 'lead' }], status: 'COMPLETED' },
-  { id: 't3_6', phaseId: 3, phaseName: 'Nội dung 3: Mô hình ML & Phân cụm', code: 'CV 3.6', name: 'So sánh và lựa chọn mô hình tối ưu nhất (XGBoost 91.50%)', deliverable: 'Mô hình tốt nhất', timeline: '01/2027 - 02/2027', assignees: [{ name: 'Hoàng Lê Thảo Nhi', role: 'lead' }], status: 'COMPLETED' },
+  { id: 't3_6', phaseId: 3, phaseName: 'Nội dung 3: Mô hình ML & Phân cụm', code: 'CV 3.6', name: 'So sánh và lựa chọn mô hình tối ưu nhất (theo CV ROC-AUC)', deliverable: 'Mô hình tốt nhất', timeline: '01/2027 - 02/2027', assignees: [{ name: 'Hoàng Lê Thảo Nhi', role: 'lead' }], status: 'COMPLETED' },
 
   // Nội dung 4
   { id: 't4_1', phaseId: 4, phaseName: 'Nội dung 4: Động cơ DSS & Cảnh báo', code: 'CV 4.1', name: 'Xây dựng các tiêu chí và luật hỗ trợ ra quyết định DSS', deliverable: 'Bộ luật và tiêu chí DSS', timeline: '02/2027 - 03/2027', assignees: [{ name: 'Hoàng Lê Thảo Nhi', role: 'lead' }], status: 'COMPLETED', linkedFeature: 'Rule-based DSS Engine' },
@@ -375,7 +375,7 @@ export const ResearchProposalTab: React.FC = () => {
           </div>
           <h3 className="pillar-title">Sản Phẩm Khoa Học Dự Kiến (Mục 17)</h3>
           <ul className="proposal-list">
-            <li><strong>01 Phần Mềm Hệ Thống DSS:</strong> Thu thập dữ liệu đa kênh, XGBoost Churn (91.50%), K-Means RFM, MongoDB Atlas.</li>
+            <li><strong>01 Phần Mềm Hệ Thống DSS:</strong> Thu thập dữ liệu đa kênh, dự báo Churn (LR/DT/RF/XGBoost), K-Means RFM, MongoDB Atlas.</li>
             <li><strong>01 Bảng Tổng Hợp Trực Quan:</strong> Bảng điều khiển Cockpit Adminator tương tác thời gian thực.</li>
             <li><strong>01 Tài Liệu Hướng Dẫn:</strong> Hướng dẫn sử dụng chi tiết các phân hệ quản trị.</li>
             <li><strong>01 Bài Báo Khoa Học:</strong> Báo cáo tại Hội thảo Khoa học cấp Khoa trở lên.</li>

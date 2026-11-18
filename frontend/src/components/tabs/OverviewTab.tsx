@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useModelMetrics, fmt, pct } from '../../context/MetricsContext';
 import {
   Eye,
   FileText,
@@ -20,6 +21,7 @@ import {
 
 export const OverviewTab: React.FC = () => {
   const { currentUser } = useAuth();
+  const { metrics, error: metricsError } = useModelMetrics();
   const [tasks, setTasks] = useState([
     { id: 1, text: 'Gửi Voucher giảm giá 20% cho 142 khách hàng rủi ro cao (Churn > 70%)', done: false },
     { id: 2, text: 'Phân bổ chuyên viên CSKH hỗ trợ trực tiếp 28 tài khoản VIP đang sụt giảm tương tác', done: true },
@@ -309,11 +311,19 @@ export const OverviewTab: React.FC = () => {
             </div>
             <div className="stat-row">
               <span className="stat-label">Tổng khách hàng phân cụm (RFM)</span>
-              <span className="stat-val">10,480 Tài khoản</span>
+              <span className="stat-val">
+                {metrics ? `${metrics.rfm.n_customers.toLocaleString('vi-VN')} Khách hàng` : '—'}
+              </span>
             </div>
             <div className="stat-row">
-              <span className="stat-label">Độ chính xác mô hình Churn (XGBoost)</span>
-              <span className="stat-val highlight-blue">91.50% (ROC-AUC: 0.9575)</span>
+              <span className="stat-label">
+                Mô hình Churn ({metrics?.churn.best_model ?? '—'}) — test OOT {metrics ? `n=${metrics.churn.n_test.toLocaleString('vi-VN')}` : ''}
+              </span>
+              <span className="stat-val highlight-blue">
+                {metrics
+                  ? `ROC-AUC ${fmt(metrics.churn.best_model_test.roc_auc)} · Bal.Acc ${pct(metrics.churn.best_model_test.balanced_accuracy)}`
+                  : metricsError ?? 'Đang tải...'}
+              </span>
             </div>
             <div className="stat-row">
               <span className="stat-label">Độ trễ phản hồi quyết định DSS</span>

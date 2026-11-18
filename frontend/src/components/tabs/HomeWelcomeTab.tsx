@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useModelMetrics, fmt, pct } from '../../context/MetricsContext';
 import {
   Sparkles,
   Zap,
@@ -32,6 +33,9 @@ interface HomeWelcomeTabProps {
 
 export const HomeWelcomeTab: React.FC<HomeWelcomeTabProps> = ({ setActiveTab }) => {
   const { currentUser, openProfileModal, openAuthPage } = useAuth();
+  const { metrics } = useModelMetrics();
+  const bestModel = metrics?.churn.best_model ?? 'mô hình Churn';
+  const bestTest = metrics?.churn.best_model_test;
 
   const handleDownloadReport = () => {
     alert('Đang tạo và tải về tệp Báo Cáo Nghiên Cứu Khoa Học Tóm Tắt (Định dạng PDF)...');
@@ -68,7 +72,7 @@ export const HomeWelcomeTab: React.FC<HomeWelcomeTabProps> = ({ setActiveTab }) 
 
           {/* Subtitle */}
           <p className="welcome-hero-desc">
-            Hệ thống <strong>Omni Customer DSS</strong> tích hợp phân cụm thông minh <strong>K-Means RFM</strong>, mô hình học máy <strong>XGBoost</strong> dự báo rủi ro rời bỏ khách hàng (Churn Risk) đạt độ chính xác <strong>91.50%</strong>, kết hợp động cơ luật ra quyết định tự động hóa tiếp thị cá nhân hóa theo thời gian thực.
+            Hệ thống <strong>Omni Customer DSS</strong> tích hợp phân cụm thông minh <strong>K-Means RFM</strong>, so sánh 4 mô hình học máy (Logistic Regression, Decision Tree, Random Forest, XGBoost) dự báo rủi ro rời bỏ khách hàng (Churn Risk) — mô hình được chọn: <strong>{bestModel}</strong> với ROC-AUC <strong>{fmt(bestTest?.roc_auc)}</strong> trên tập kiểm định out-of-time, kết hợp động cơ luật ra quyết định tự động hóa tiếp thị cá nhân hóa theo thời gian thực.
           </p>
 
           {/* Action Buttons Row */}
@@ -126,14 +130,14 @@ export const HomeWelcomeTab: React.FC<HomeWelcomeTabProps> = ({ setActiveTab }) 
 
             <div className="welcome-kpi-box">
               <div className="kpi-box-icon"><BrainCircuit size={20} color="#10b981" /></div>
-              <div className="kpi-box-val">91.50%</div>
-              <div className="kpi-box-lbl">Độ Chính Xác XGBoost Churn</div>
+              <div className="kpi-box-val">{pct(bestTest?.balanced_accuracy)}</div>
+              <div className="kpi-box-lbl">Balanced Accuracy ({bestModel})</div>
             </div>
 
             <div className="welcome-kpi-box">
               <div className="kpi-box-icon"><TrendingUp size={20} color="#f59e0b" /></div>
-              <div className="kpi-box-val">0.9575</div>
-              <div className="kpi-box-lbl">ROC-AUC Score Thực Nghiệm</div>
+              <div className="kpi-box-val">{fmt(bestTest?.roc_auc)}</div>
+              <div className="kpi-box-lbl">ROC-AUC Test Out-of-Time</div>
             </div>
 
             <div className="welcome-kpi-box">
@@ -191,9 +195,9 @@ export const HomeWelcomeTab: React.FC<HomeWelcomeTabProps> = ({ setActiveTab }) 
             <div className="pillar-icon-box bg-amber">
               <Target size={24} color="#f59e0b" />
             </div>
-            <h3 className="pillar-title">3. Động Cơ Dự Báo Churn XGBoost</h3>
+            <h3 className="pillar-title">3. Động Cơ Dự Báo Churn ({bestModel})</h3>
             <p className="pillar-desc">
-              Mô hình học máy <strong>XGBoost Classifier</strong> được tinh chỉnh siêu tham số bằng Optuna, cho phép nhận diện sớm nguy cơ khách hàng ngừng mua sắm trước 30-60 ngày với độ chính xác đạt <strong>91.50%</strong> và ROC-AUC <strong>0.9575</strong>.
+              4 mô hình được tinh chỉnh siêu tham số bằng <strong>GridSearchCV</strong> (5-fold) và lựa chọn theo CV ROC-AUC; mô hình tốt nhất <strong>{bestModel}</strong> đạt ROC-AUC <strong>{fmt(bestTest?.roc_auc)}</strong> khi dự báo khách không quay lại trong cửa sổ {metrics ? `${metrics.churn.outcome_window.days.toFixed(1)} ngày` : '—'} sau mốc quan sát.
             </p>
             <div className="pillar-footer-tag">
               <CheckCircle2 size={14} color="#f59e0b" /> Nhận diện sớm rủi ro Churn
@@ -276,7 +280,7 @@ export const HomeWelcomeTab: React.FC<HomeWelcomeTabProps> = ({ setActiveTab }) 
             <div className="step-icon-wrapper"><BrainCircuit size={24} color="#10b981" /></div>
             <h4 className="step-title">Phân Tích AI & Học Máy</h4>
             <p className="step-desc">
-              Phân cụm khách hàng K-Means ($K=4$). Mô hình XGBoost tính toán xác suất rời bỏ (Churn Probability) và phân cấp nguy cơ rủi ro.
+              Phân cụm khách hàng K-Means ($K=4$). Mô hình {bestModel} tính toán xác suất rời bỏ (Churn Probability) và phân cấp nguy cơ rủi ro.
             </p>
             <div className="step-tech-tag">Scikit-Learn · XGBoost · FastAPI</div>
           </div>
@@ -326,10 +330,10 @@ export const HomeWelcomeTab: React.FC<HomeWelcomeTabProps> = ({ setActiveTab }) 
                 <td><span className="badge-gain">Nhanh hơn 99%</span></td>
               </tr>
               <tr>
-                <td className="font-bold">Độ chính xác dự báo rời bỏ</td>
-                <td>45% - 55% (Dựa trên cảm tính)</td>
-                <td className="highlight-column font-bold color-emerald">91.50% (Mô hình XGBoost)</td>
-                <td><span className="badge-gain">+ 36.5% Chính xác</span></td>
+                <td className="font-bold">Khả năng phân biệt khách rời bỏ (ROC-AUC)</td>
+                <td>0.50 (Đoán ngẫu nhiên / cảm tính)</td>
+                <td className="highlight-column font-bold color-emerald">{fmt(bestTest?.roc_auc)} ({bestModel})</td>
+                <td><span className="badge-gain">{bestTest ? `+${(bestTest.roc_auc - 0.5).toFixed(2)} AUC` : '—'}</span></td>
               </tr>
               <tr>
                 <td className="font-bold">Phân bổ kịch bản Marketing</td>

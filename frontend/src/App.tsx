@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { NotificationChatProvider } from './context/NotificationChatContext';
+import { MetricsProvider } from './context/MetricsContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopHeader } from './components/layout/TopHeader';
 import { NotificationDrawer } from './components/notifications/NotificationDrawer';
@@ -61,9 +62,11 @@ export const App: React.FC = () => {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <NotificationChatProvider>
-          <MainLayout />
-        </NotificationChatProvider>
+        <MetricsProvider>
+          <NotificationChatProvider>
+            <MainLayout />
+          </NotificationChatProvider>
+        </MetricsProvider>
       </AuthProvider>
     </ThemeProvider>
   );

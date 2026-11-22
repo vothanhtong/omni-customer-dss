@@ -4,8 +4,8 @@ from pydantic import BaseModel, Field
 class DSSRequest(BaseModel):
     customer_id: Optional[str] = Field("N/A", description="Mã định danh khách hàng")
     rfm_segment: str = Field(..., description="Phân khúc RFM ('VIP', 'Tiềm năng', 'Cần chăm sóc', 'Rủi ro')")
-    churn_risk: float = Field(..., description="Tỷ lệ xác suất churn (0.0 - 1.0) hoặc phần trăm (0 - 100)")
-    recency: Optional[int] = None
+    churn_risk: float = Field(..., ge=0, le=100, description="Xác suất churn (0.0 - 1.0) hoặc phần trăm (> 1 - 100)")
+    recency: Optional[float] = None
     frequency: Optional[int] = None
     monetary: Optional[float] = None
 
@@ -28,3 +28,4 @@ class DSSResponse(BaseModel):
     alert_level: str
     warnings: List[str]
     recommendations: List[str]
+    matched_rules: List[str] = []

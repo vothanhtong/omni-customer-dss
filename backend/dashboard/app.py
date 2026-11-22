@@ -109,24 +109,12 @@ st.markdown("""
 # ==============================================================================
 @st.cache_data
 def load_data():
-    csv_path = os.path.join(SAVED_MODELS_DIR, "synthetic_customers.csv")
-    if os.path.exists(csv_path):
-        df = pd.read_csv(csv_path)
-    else:
-        # Fallback synthetic dataset generation
-        np.random.seed(42)
-        n = 1000
-        df = pd.DataFrame({
-            "customer_id": [f"CUST_{1000 + i}" for i in range(n)],
-            "recency": np.random.randint(1, 365, size=n),
-            "frequency": np.random.poisson(lam=12, size=n) + 1,
-            "monetary": np.random.uniform(500, 30000, size=n).round(2),
-            "fav_channel": np.random.choice(["POS", "Website", "TMĐT"], size=n, p=[0.35, 0.40, 0.25]),
-            "support_tickets": np.random.poisson(lam=1.5, size=n),
-            "app_logins_last_month": np.random.randint(0, 30, size=n),
-            "days_since_last_support": np.random.randint(1, 180, size=n),
-            "churn_prob": np.random.uniform(0.05, 0.95, size=n)
-        })
+    csv_path = os.path.join(SAVED_MODELS_DIR, "scored_customers.csv")
+    if not os.path.exists(csv_path):
+        st.error("Chưa có dữ liệu khách hàng đã chấm điểm. Hãy chạy: python backend/train_pipeline.py")
+        st.stop()
+    # Khách hàng tập test out-of-time (dữ liệu thật), đã chấm điểm churn & phân cụm RFM
+    df = pd.read_csv(csv_path)
 
     # Chuyển churn_prob về phần trăm (0 - 100%)
     if "churn_prob" in df.columns:
@@ -157,8 +145,8 @@ df_raw = load_data()
 st.sidebar.markdown("## ⚙️ Bộ Lọc Dữ Liệu Đa Kênh")
 st.sidebar.markdown("---")
 
-# Bộ lọc Kênh bán hàng (POS, Website, TMĐT)
-channels = ["Tất cả các kênh", "POS", "Website", "TMĐT"]
+# Bộ lọc Kênh bán hàng (lấy từ dữ liệu)
+channels = ["Tất cả các kênh"] + sorted(df_raw["fav_channel"].dropna().unique().tolist())
 selected_channel = st.sidebar.selectbox("🎯 Chọn Kênh Bán Hàng:", channels, index=0)
 
 # Bộ lọc Phân khúc RFM
@@ -169,7 +157,8 @@ selected_segment = st.sidebar.selectbox("💎 Phân Khúc KH (RFM):", all_segmen
 churn_threshold = st.sidebar.slider("⚠️ Ngưỡng Rủi Ro Churn (%):", min_value=0, max_value=100, value=(0, 100))
 
 # Bộ lọc Số ngày chưa mua sắm (Recency)
-recency_range = st.sidebar.slider("📅 Số Ngày Chưa Mua (Recency):", min_value=0, max_value=365, value=(0, 365))
+_max_recency = int(np.ceil(df_raw["recency"].max())) if len(df_raw) else 365
+recency_range = st.sidebar.slider("📅 Số Ngày Chưa Mua (Recency):", min_value=0, max_value=_max_recency, value=(0, _max_recency))
 
 # Áp dụng bộ lọc vào DataFrame
 df_filtered = df_raw.copy()
@@ -195,7 +184,7 @@ st.sidebar.info(f"📊 Đang hiển thị **{len(df_filtered):,}** / **{len(df_r
 # 4. MAIN PANEL - HEADER & KHUNG KPI METRICS
 # ==============================================================================
 st.markdown("<h1 style='text-align: center; color: #ffffff;'>📊 Hệ Thống DSS Phân Tích & Dự Đoán Hành Vi Khách Hàng Đa Kênh</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #9ca3af; margin-bottom: 28px;'>Bảng điều khiển kinh doanh tích hợp Mô hình ML K-Means, XGBoost và Động cơ Hỗ trợ Ra Quyết định (DSS Engine)</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #9ca3af; margin-bottom: 28px;'>Bảng điều khiển kinh doanh tích hợp Mô hình ML K-Means, Churn (LR/DT/RF/XGBoost) và Động cơ Hỗ trợ Ra Quyết định (DSS Engine)</p>", unsafe_allow_html=True)
 
 # Tính toán các chỉ số KPI
 total_revenue = df_filtered["monetary"].sum()
@@ -280,7 +269,7 @@ with chart_col1:
         st.info("Không có dữ liệu phù hợp với bộ lọc.")
 
 with chart_col2:
-    st.markdown("### 📈 Tỷ Lệ Churn Theo Kênh Bán Hàng (POS vs Web vs TMĐT)")
+    st.markdown("### 📈 Tỷ Lệ Churn Theo Kênh Bán Hàng")
     if len(df_filtered) > 0:
         channel_churn = df_filtered.groupby("fav_channel")["churn_pct"].mean().reset_index()
         channel_churn.columns = ["Channel", "Avg_Churn"]

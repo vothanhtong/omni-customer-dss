@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { predictRFM } from '../../services/api';
+import { predictRFM, getApiErrorMessage } from '../../services/api';
 import { RFMResponse } from '../../types/customer';
 import { PieChart, Send, CheckCircle2 } from 'lucide-react';
 
 export const RFMSegmentationTab: React.FC = () => {
-  const [recency, setRecency] = useState<number>(30);
-  const [frequency, setFrequency] = useState<number>(12);
-  const [monetary, setMonetary] = useState<number>(8500);
+  // Giá trị mặc định theo phân bố dữ liệu thật (đơn vị VNĐ)
+  const [recency, setRecency] = useState<number>(10);
+  const [frequency, setFrequency] = useState<number>(2);
+  const [monetary, setMonetary] = useState<number>(600000);
   const [loading, setLoading] = useState<boolean>(false);
   const [result, setResult] = useState<RFMResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +20,7 @@ export const RFMSegmentationTab: React.FC = () => {
       const res = await predictRFM({ recency, frequency, monetary });
       setResult(res);
     } catch (err: any) {
-      setError(err.message || 'Không thể kết nối đến Backend API.');
+      setError(getApiErrorMessage(err, 'Không thể kết nối đến Backend API.'));
     } finally {
       setLoading(false);
     }
@@ -48,19 +49,19 @@ export const RFMSegmentationTab: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Frequency (Số lần giao dịch):</label>
+            <label className="form-label">Frequency (Số đơn mua thành công):</label>
             <input
               type="number"
               className="form-input"
               value={frequency}
               onChange={(e) => setFrequency(Number(e.target.value))}
-              min={1}
+              min={0}
               required
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Monetary (Tổng giá trị chi tiêu VNĐ / k VNĐ):</label>
+            <label className="form-label">Monetary (Tổng giá trị đơn thành công, VNĐ):</label>
             <input
               type="number"
               className="form-input"
@@ -110,7 +111,7 @@ export const RFMSegmentationTab: React.FC = () => {
               </div>
               <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '10px', borderRadius: '8px' }}>
                 <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Frequency</div>
-                <div style={{ fontWeight: 600 }}>{result.frequency} lần</div>
+                <div style={{ fontWeight: 600 }}>{result.frequency} đơn TC</div>
               </div>
               <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '10px', borderRadius: '8px' }}>
                 <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Monetary</div>

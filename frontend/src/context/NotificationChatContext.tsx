@@ -1,4 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useModelMetrics, fmt } from './MetricsContext';
+import { useAuth } from './AuthContext';
+import { DssRule, getDssRules, getHighRiskCustomers } from '../services/api';
+import { HighRiskPage } from '../types/customer';
 
 export interface AppNotification {
   id: string;
@@ -31,7 +35,7 @@ interface NotificationChatContextType {
   markAllAsRead: () => void;
   clearNotifications: () => void;
 
-  // Live Chat
+  // Chat
   messages: ChatMessage[];
   activeChatChannel: 'dss_ai' | 'cskh_team';
   setActiveChatChannel: (channel: 'dss_ai' | 'cskh_team') => void;
@@ -44,145 +48,168 @@ interface NotificationChatContextType {
 
 const NotificationChatContext = createContext<NotificationChatContextType | undefined>(undefined);
 
-const INITIAL_NOTIFICATIONS: AppNotification[] = [
-  {
-    id: 'NOTIF_01',
-    title: '🔴 Cảnh Báo Churn Khẩn Cấp',
-    message: 'Phát hiện 142 khách hàng có nguy cơ rời bỏ > 70% trong 7 ngày qua. Đề xuất kích hoạt Voucher 20%.',
-    type: 'danger',
-    time: '5 phút trước',
-    read: false,
-    actionLabel: 'Xem danh sách',
-  },
-  {
-    id: 'NOTIF_02',
-    title: '🟡 Khách Hàng VIP Giảm Tương Tác',
-    message: '28 Khách hàng VIP chưa phát sinh giao dịch mới trong 45 ngày qua trên kênh Website.',
-    type: 'warning',
-    time: '25 phút trước',
-    read: false,
-    actionLabel: 'Phân bổ CSKH',
-  },
-  {
-    id: 'NOTIF_03',
-    title: '🟢 Cập Nhật Mô Hình XGBoost',
-    message: 'Tái huấn luyện mô hình Churn hoàn tất với ROC-AUC đạt 0.9575 trên 10,480 bản ghi MongoDB.',
-    type: 'success',
-    time: '1 giờ trước',
-    read: false,
-  },
-  {
-    id: 'NOTIF_04',
-    title: '🔵 Đồng Bộ Dữ Liệu Đa Kênh',
-    message: 'Dữ liệu từ POS Cửa hàng & Sàn TMĐT đã được đồng bộ vào MongoDB Atlas Cloud thành công.',
-    type: 'info',
-    time: '3 giờ trước',
-    read: true,
-  },
-];
+export const ASSISTANT_NAME = 'Trợ lý gợi ý theo luật';
+const ASSISTANT_AVATAR = '📋';
+const nowTime = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const n = (v: number) => v.toLocaleString('vi-VN');
 
 const INITIAL_MESSAGES: ChatMessage[] = [
   {
-    id: 'MSG_01',
+    id: 'MSG_WELCOME',
     sender: 'assistant',
-    senderName: 'Trợ Lý AI DSS',
-    avatar: '🤖',
-    text: 'Xin chào! Tôi là Trợ Lý AI Hỗ Trợ Ra Quyết Định (Omni DSS Copilot). Bạn có thể hỏi tôi về phân cụm RFM, dự đoán rủi ro rời bỏ khách hàng hoặc đề xuất chương trình khuyến mãi.',
-    time: '10:00',
+    senderName: ASSISTANT_NAME,
+    avatar: ASSISTANT_AVATAR,
+    text:
+      'Xin chào! Tôi trả lời dựa trên bảng luật DSS và số liệu thật của hệ thống (mô hình churn, phân cụm RFM, danh sách cảnh báo). ' +
+      'Tôi không phải mô hình AI tạo sinh. Hãy hỏi về: rủi ro rời bỏ, khách VIP, khách tiềm năng, phân cụm RFM hoặc chất lượng mô hình.',
+    time: '',
     channel: 'dss_ai',
   },
   {
-    id: 'MSG_02',
+    id: 'MSG_NOTES',
     sender: 'cskh_staff',
-    senderName: 'Chuyên Viên CSKH VIP',
-    avatar: '👩‍💼',
-    text: 'Đã hoàn tất cuộc gọi hỗ trợ 1-1 cho 12 khách hàng VIP nhóm có rủi ro rời bỏ. 10 khách hàng đã đồng ý nhận mã Voucher tái kích hoạt.',
-    time: '10:15',
+    senderName: 'Hệ thống',
+    avatar: '🗒️',
+    text: 'Kênh ghi chú nội bộ của nhóm CSKH. Ghi chú chỉ lưu trong phiên làm việc hiện tại trên trình duyệt này.',
+    time: '',
     channel: 'cskh_team',
   },
 ];
 
+/** Trả lời theo luật: chọn chủ đề theo từ khóa, nội dung lấy từ bảng luật DSS và số liệu thật */
+function ruleBasedReply(
+  text: string,
+  ctx: { rules: DssRule[]; risk: HighRiskPage | null; metrics: ReturnType<typeof useModelMetrics>['metrics'] },
+): string {
+  const lower = text.toLowerCase();
+  const { rules, risk, metrics } = ctx;
+  const rulesFor = (pred: (r: DssRule) => boolean) =>
+    rules.filter(pred).map((r) => `• ${r.rule_id} [${r.level}] ${r.segments}, churn ${r.churn_interval}: ${r.recommendation}`).join('\n');
+
+  if (/churn|rời bỏ|nguy cơ|rủi ro/.test(lower)) {
+    const counts = risk ? `Hiện có ${n(risk.alert_counts.CRITICAL)} khách mức Khẩn cấp và ${n(risk.alert_counts.HIGH)} khách mức Cao (trên ${n(risk.population)} khách đã chấm điểm).\n` : '';
+    return `📊 ${counts}Luật DSS áp dụng cho nhóm rủi ro:\n${rulesFor((r) => r.level === 'CRITICAL' || r.level === 'HIGH') || '(chưa tải được bảng luật)'}`;
+  }
+  if (/vip|giữ chân/.test(lower)) {
+    const seg = metrics?.rfm.segments.find((s) => s.segment === 'VIP');
+    const prof = seg ? `Phân khúc VIP: ${n(seg.customers)} khách (${(seg.share * 100).toFixed(1)}%), TB ${seg.mean_frequency} đơn thành công.\n` : '';
+    return `💎 ${prof}Luật DSS cho VIP:\n${rulesFor((r) => r.segments.includes('VIP') && !r.segments.includes('trừ VIP')) || '(chưa tải được bảng luật)'}`;
+  }
+  if (/tiềm năng|cơ hội|mua lại|xu hướng/.test(lower)) {
+    const opp = risk ? `Hiện có ${n(risk.opportunity_count)} khách tiềm năng (VIP/Tiềm năng, xác suất mua lại ≥ 60%) — xem tab Cảnh báo › Khách tiềm năng.\n` : '';
+    return `📈 ${opp}Luật DSS cho nhóm Tiềm năng:\n${rulesFor((r) => r.segments.includes('Tiềm năng')) || '(chưa tải được bảng luật)'}`;
+  }
+  if (/rfm|phân cụm|phân khúc/.test(lower)) {
+    return metrics
+      ? `🎯 K-Means (K=${metrics.rfm.k}) trên ${n(metrics.rfm.n_customers)} khách: ` +
+          metrics.rfm.segments.map((s) => `${s.segment} ${(s.share * 100).toFixed(1)}%`).join(', ') + `.\nGán nhãn: ${metrics.rfm.labeling_rule}`
+      : '🎯 Chưa tải được kết quả phân cụm từ máy chủ.';
+  }
+  if (/mô hình|chính xác|auc|độ tin cậy/.test(lower)) {
+    if (!metrics) return 'Chưa tải được chỉ số mô hình.';
+    const t = metrics.churn.best_model_test;
+    return `🧪 ${metrics.churn.best_model} trên tập kiểm tra out-of-time (${n(metrics.churn.n_test)} khách): ROC-AUC ${fmt(t.roc_auc)}, ` +
+      `balanced accuracy ${fmt(t.balanced_accuracy)}, F1 ${fmt(t.f1_score)}. Lưu ý: ${(metrics.churn.churn_rate_test * 100).toFixed(1)}% khách ` +
+      'trong tập kiểm tra là churn nên accuracy không phản ánh đúng chất lượng; nên đọc ROC-AUC và balanced accuracy.';
+  }
+  return 'Tôi chỉ trả lời các chủ đề: rủi ro rời bỏ, khách VIP, khách tiềm năng, phân cụm RFM, chất lượng mô hình. Hãy thử một trong các gợi ý bên dưới.';
+}
+
 export const NotificationChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState<boolean>(false);
 
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [activeChatChannel, setActiveChatChannel] = useState<'dss_ai' | 'cskh_team'>('dss_ai');
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState<boolean>(false);
+  const [rules, setRules] = useState<DssRule[]>([]);
+  const [risk, setRisk] = useState<HighRiskPage | null>(null);
 
-  const unreadNotificationCount = notifications.filter(n => !n.read).length;
-  const unreadChatCount = 3;
+  const { metrics } = useModelMetrics();
+  const { isAuthenticated } = useAuth();
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  };
+  const upsert = (notif: AppNotification) =>
+    setNotifications((prev) => [notif, ...prev.filter((x) => x.id !== notif.id)]);
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  };
+  // Thông báo cập nhật mô hình (số liệu thật từ /api/metrics)
+  useEffect(() => {
+    if (!metrics) return;
+    const c = metrics.churn;
+    const best = c.best_model_test;
+    upsert({
+      id: 'NOTIF_MODEL',
+      title: `🟢 Mô hình churn: ${c.best_model}`,
+      message:
+        `Huấn luyện trên ${n(c.n_train)} KH, kiểm định out-of-time trên ${n(c.n_test)} KH: ` +
+        `ROC-AUC ${fmt(best.roc_auc)}, balanced accuracy ${fmt(best.balanced_accuracy)}.`,
+      type: 'success',
+      time: new Date(metrics.generated_at).toLocaleString('vi-VN'),
+      read: false,
+    });
+  }, [metrics]);
 
-  const clearNotifications = () => {
-    setNotifications([]);
-  };
+  // Cảnh báo rủi ro & khách tiềm năng (số liệu thật từ /api/customers/high-risk — cần đăng nhập)
+  useEffect(() => {
+    getDssRules().then(setRules).catch(() => setRules([]));
+    if (!isAuthenticated) return;
+    getHighRiskCustomers({ alert_level: ['CRITICAL', 'HIGH'], page: 1, page_size: 1 })
+      .then((res) => {
+        setRisk(res);
+        const time = new Date().toLocaleString('vi-VN');
+        upsert({
+          id: 'NOTIF_RISK',
+          title: '🔴 Cảnh báo rủi ro rời bỏ',
+          message: `${n(res.alert_counts.CRITICAL)} khách mức Khẩn cấp và ${n(res.alert_counts.HIGH)} khách mức Cao cần can thiệp (theo bảng luật DSS).`,
+          type: 'danger',
+          time,
+          read: false,
+          actionLabel: 'Xem danh sách',
+        });
+        upsert({
+          id: 'NOTIF_OPPORTUNITY',
+          title: '📈 Khách hàng tiềm năng',
+          message: `${n(res.opportunity_count)} khách VIP/Tiềm năng có xác suất mua lại ≥ 60%: phù hợp chiến dịch tri ân, bán thêm.`,
+          type: 'info',
+          time,
+          read: false,
+          actionLabel: 'Xem danh sách',
+        });
+      })
+      .catch(() => undefined);
+  }, [isAuthenticated]);
+
+  const unreadNotificationCount = notifications.filter((x) => !x.read).length;
+  const unreadChatCount = 0;
+
+  const markAsRead = (id: string) => setNotifications((prev) => prev.map((x) => (x.id === id ? { ...x, read: true } : x)));
+  const markAllAsRead = () => setNotifications((prev) => prev.map((x) => ({ ...x, read: true })));
+  const clearNotifications = () => setNotifications([]);
 
   const sendMessage = (text: string) => {
     if (!text.trim()) return;
-
     const userMsg: ChatMessage = {
       id: `MSG_${Date.now()}`,
       sender: 'user',
       senderName: 'Bạn',
       avatar: '👤',
       text: text.trim(),
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      time: nowTime(),
       channel: activeChatChannel,
     };
+    setMessages((prev) => [...prev, userMsg]);
 
-    setMessages(prev => [...prev, userMsg]);
-
-    // Tự động phản hồi thông minh nếu đang ở kênh AI DSS
-    if (activeChatChannel === 'dss_ai') {
-      setTimeout(() => {
-        let replyText = 'Tôi đã ghi nhận câu hỏi của bạn. Hệ thống DSS đề xuất: ';
-        const lower = text.toLowerCase();
-
-        if (lower.includes('churn') || lower.includes('rời bỏ') || lower.includes('nguy cơ')) {
-          replyText = '📊 Phân tích Churn: Đối với nhóm khách hàng Churn > 70%, giải pháp tối ưu nhất là tự động phát Voucher giảm giá 15-20% và gán chuyên viên CSKH liên hệ trực tiếp trong 24 giờ.';
-        } else if (lower.includes('vip') || lower.includes('giữ chân')) {
-          replyText = '💎 Chiến lược VIP: Mời khách hàng tham gia câu lạc bộ đặc quyền VIP, tích lũy điểm thưởng kép và gửi quà tặng cá nhân hóa vào dịp đặc biệt.';
-        } else if (lower.includes('rfm') || lower.includes('phân cụm')) {
-          replyText = '🎯 Phân cụm RFM: Hiện tại K-Means đang chia tập khách hàng thành 4 nhóm tối ưu: VIP (25.4%), Tiềm năng (28.1%), Cần chăm sóc (26.3%), Rủi ro (20.2%).';
-        } else {
-          replyText = '💡 Đề xuất DSS: Dựa trên mô hình học máy XGBoost, việc gửi email kích hoạt giỏ hàng kèm ưu đãi Freeship vào lúc 19:00 - 21:00 giúp tăng tỷ lệ quay lại mua sắm thêm 34%.';
-        }
-
-        const aiMsg: ChatMessage = {
-          id: `MSG_AI_${Date.now()}`,
-          sender: 'assistant',
-          senderName: 'Trợ Lý AI DSS',
-          avatar: '🤖',
-          text: replyText,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          channel: 'dss_ai',
-        };
-
-        setMessages(prev => [...prev, aiMsg]);
-      }, 600);
-    } else {
-      // Phản hồi từ kênh CSKH Team
-      setTimeout(() => {
-        const staffMsg: ChatMessage = {
-          id: `MSG_STAFF_${Date.now()}`,
-          sender: 'cskh_staff',
-          senderName: 'Trưởng Nhóm CSKH',
-          avatar: '👨‍💼',
-          text: 'Đã nhận thông tin chỉ đạo. Đội ngũ CSKH đang tiến hành xử lý danh sách ưu tiên theo đúng quy trình DSS.',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          channel: 'cskh_team',
-        };
-        setMessages(prev => [...prev, staffMsg]);
-      }, 700);
-    }
+    // Kênh CSKH chỉ là ghi chú nội bộ: không có phản hồi tự động giả lập
+    if (activeChatChannel !== 'dss_ai') return;
+    const reply: ChatMessage = {
+      id: `MSG_RULE_${Date.now()}`,
+      sender: 'assistant',
+      senderName: ASSISTANT_NAME,
+      avatar: ASSISTANT_AVATAR,
+      text: ruleBasedReply(text, { rules, risk, metrics }),
+      time: nowTime(),
+      channel: 'dss_ai',
+    };
+    setMessages((prev) => [...prev, reply]);
   };
 
   return (
@@ -197,7 +224,7 @@ export const NotificationChatProvider: React.FC<{ children: React.ReactNode }> =
         markAllAsRead,
         clearNotifications,
 
-        messages: messages.filter(m => m.channel === activeChatChannel),
+        messages: messages.filter((m) => m.channel === activeChatChannel),
         activeChatChannel,
         setActiveChatChannel,
         isChatDrawerOpen,

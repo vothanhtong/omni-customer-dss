@@ -18,19 +18,25 @@ if BASE_DIR not in sys.path:
 try:
     from backend.app.core.ml_models import ml_manager
     from backend.app.core.database import db_manager
-    from backend.app.core.config import MONGODB_URL, MONGODB_DB_NAME
+    from backend.app.core.config import ALLOWED_ORIGINS
     from backend.app.api.rfm import router as rfm_router
     from backend.app.api.churn import router as churn_router
     from backend.app.api.dss import router as dss_router
     from backend.app.api.auth import router as auth_router
+    from backend.app.api.metrics import router as metrics_router
+    from backend.app.api.analytics import router as analytics_router
+    from backend.app.api.customers import router as customers_router
 except ImportError:
     from app.core.ml_models import ml_manager
     from app.core.database import db_manager
-    from app.core.config import MONGODB_URL, MONGODB_DB_NAME
+    from app.core.config import ALLOWED_ORIGINS
     from app.api.rfm import router as rfm_router
     from app.api.churn import router as churn_router
     from app.api.dss import router as dss_router
     from app.api.auth import router as auth_router
+    from app.api.metrics import router as metrics_router
+    from app.api.analytics import router as analytics_router
+    from app.api.customers import router as customers_router
 
 
 @asynccontextmanager
@@ -51,18 +57,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Customer Analytics & Churn Prediction API",
-    description="REST API tích hợp K-Means RFM Segmentation, XGBoost Churn Prediction, DSS Engine và MongoDB Database",
+    description="REST API tích hợp K-Means RFM Segmentation, Churn Prediction (LR/DT/RF/XGBoost), DSS Engine và MongoDB Database",
     version="1.2.0",
     lifespan=lifespan
 )
 
-# Cấu hình CORS Middleware
+# Cấu hình CORS Middleware: chỉ cho phép các origin khai báo trong ALLOWED_ORIGINS.
+# Không bao giờ kết hợp wildcard "*" với allow_credentials=True.
+_allow_all = "*" in ALLOWED_ORIGINS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["*"] if _allow_all else ALLOWED_ORIGINS,
+    allow_credentials=not _allow_all,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # Include API Routers
@@ -70,6 +78,9 @@ app.include_router(auth_router)
 app.include_router(rfm_router)
 app.include_router(churn_router)
 app.include_router(dss_router)
+app.include_router(metrics_router)
+app.include_router(analytics_router)
+app.include_router(customers_router)
 
 
 @app.get("/", tags=["Health Check"])
@@ -84,10 +95,5 @@ def root():
 
 @app.get("/api/db/status", tags=["Database"])
 def db_status():
-    """Kiểm tra trạng thái kết nối MongoDB"""
-    return {
-        "connected": db_manager.is_connected,
-        "mongodb_url": MONGODB_URL,
-        "database_name": MONGODB_DB_NAME,
-        "mode": "MongoDB Cluster / Local" if db_manager.is_connected else "Offline Fallback"
-    }
+    """Kiểm tra trạng thái kết nối MongoDB (không trả về chuỗi kết nối)."""
+    return {"status": "connected" if db_manager.is_connected else "offline"}

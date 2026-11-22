@@ -1,15 +1,16 @@
 from datetime import datetime, timezone
+# pyrefly: ignore [missing-import]
 from fastapi import APIRouter, HTTPException, status
 
 try:
     from backend.app.schemas.rfm import CustomerSegmentRequest, CustomerSegmentResponse
     from backend.app.schemas import dump_model
-    from backend.app.core.ml_models import ml_manager
+    from backend.app.core.ml_models import ml_manager, ModelNotReadyError
     from backend.app.core.database import db_manager
 except ImportError:
     from app.schemas.rfm import CustomerSegmentRequest, CustomerSegmentResponse
     from app.schemas import dump_model
-    from app.core.ml_models import ml_manager
+    from app.core.ml_models import ml_manager, ModelNotReadyError
     from app.core.database import db_manager
 
 router = APIRouter(prefix="/api/rfm", tags=["RFM Segmentation"])
@@ -40,6 +41,8 @@ async def predict_segment(payload: CustomerSegmentRequest):
         })
         
         return response_data
+    except ModelNotReadyError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

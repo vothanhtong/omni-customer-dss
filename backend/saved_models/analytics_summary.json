@@ -1,0 +1,444 @@
+{
+  "period": {
+    "start": "2022-06-11 17:44:31",
+    "end": "2022-11-11 10:59:44"
+  },
+  "totals": {
+    "orders": 21249,
+    "customers": 19100,
+    "revenue_vnd": 5166017068.666666,
+    "omnichannel_customers": 181
+  },
+  "channel_distribution": [
+    {
+      "name": "Facebook Fanpage",
+      "orders": 19283,
+      "customers": 17515,
+      "order_share": 0.9075,
+      "revenue_vnd": 4651630302.0,
+      "return_rate": 0.0661,
+      "cancel_rate": 0.0261
+    },
+    {
+      "name": "Shopee",
+      "orders": 16,
+      "customers": 15,
+      "order_share": 0.0008,
+      "revenue_vnd": 365000.0,
+      "return_rate": 0.0,
+      "cancel_rate": 0.0625
+    },
+    {
+      "name": "TikTok Shop",
+      "orders": 444,
+      "customers": 420,
+      "order_share": 0.0209,
+      "revenue_vnd": 98960100.0,
+      "return_rate": 0.036,
+      "cancel_rate": 0.0113
+    },
+    {
+      "name": "Unknown/Other",
+      "orders": 795,
+      "customers": 652,
+      "order_share": 0.0374,
+      "revenue_vnd": 216100666.66666666,
+      "return_rate": 0.0377,
+      "cancel_rate": 0.0302
+    },
+    {
+      "name": "Website",
+      "orders": 711,
+      "customers": 680,
+      "order_share": 0.0335,
+      "revenue_vnd": 198961000.0,
+      "return_rate": 0.1013,
+      "cancel_rate": 0.0549
+    }
+  ],
+  "region_distribution": [
+    {
+      "name": "Miền Bắc",
+      "orders": 2600,
+      "customers": 2421,
+      "order_share": 0.1224,
+      "revenue_vnd": 535810335.3333333,
+      "return_rate": 0.0908,
+      "cancel_rate": 0.0327
+    },
+    {
+      "name": "Miền Nam",
+      "orders": 15516,
+      "customers": 13862,
+      "order_share": 0.7302,
+      "revenue_vnd": 3915667733.3333335,
+      "return_rate": 0.0591,
+      "cancel_rate": 0.0261
+    },
+    {
+      "name": "Miền Trung",
+      "orders": 3132,
+      "customers": 2838,
+      "order_share": 0.1474,
+      "revenue_vnd": 714539000.0,
+      "return_rate": 0.0763,
+      "cancel_rate": 0.0262
+    },
+    {
+      "name": "Chưa xác định",
+      "orders": 1,
+      "customers": 1,
+      "order_share": 0.0,
+      "revenue_vnd": 0.0,
+      "return_rate": null,
+      "cancel_rate": null
+    }
+  ],
+  "monthly_orders_by_channel": [
+    {
+      "month": "2022-06",
+      "Facebook Fanpage": 2,
+      "Shopee": 0,
+      "TikTok Shop": 0,
+      "Unknown/Other": 1,
+      "Website": 0,
+      "total": 3
+    },
+    {
+      "month": "2022-07",
+      "Facebook Fanpage": 1,
+      "Shopee": 0,
+      "TikTok Shop": 0,
+      "Unknown/Other": 0,
+      "Website": 0,
+      "total": 1
+    },
+    {
+      "month": "2022-08",
+      "Facebook Fanpage": 2,
+      "Shopee": 0,
+      "TikTok Shop": 0,
+      "Unknown/Other": 0,
+      "Website": 1,
+      "total": 3
+    },
+    {
+      "month": "2022-09",
+      "Facebook Fanpage": 116,
+      "Shopee": 0,
+      "TikTok Shop": 4,
+      "Unknown/Other": 3,
+      "Website": 7,
+      "total": 130
+    },
+    {
+      "month": "2022-10",
+      "Facebook Fanpage": 12094,
+      "Shopee": 10,
+      "TikTok Shop": 152,
+      "Unknown/Other": 577,
+      "Website": 599,
+      "total": 13432
+    },
+    {
+      "month": "2022-11",
+      "Facebook Fanpage": 7068,
+      "Shopee": 6,
+      "TikTok Shop": 288,
+      "Unknown/Other": 214,
+      "Website": 104,
+      "total": 7680
+    }
+  ],
+  "churn": {
+    "definition": "Không phát sinh đơn mới trong 8.6 ngày sau mốc cutoff",
+    "cutoff": "2022-11-02 21:32:06",
+    "population": 13617,
+    "overall_rate": 0.962,
+    "by_channel": [
+      {
+        "name": "Facebook Fanpage",
+        "customers": 12348,
+        "churn_rate": 0.9621
+      },
+      {
+        "name": "Shopee",
+        "customers": 10,
+        "churn_rate": 1.0
+      },
+      {
+        "name": "TikTok Shop",
+        "customers": 180,
+        "churn_rate": 1.0
+      },
+      {
+        "name": "Unknown/Other",
+        "customers": 493,
+        "churn_rate": 0.9371
+      },
+      {
+        "name": "Website",
+        "customers": 586,
+        "churn_rate": 0.9693
+      }
+    ],
+    "by_region": [
+      {
+        "name": "Miền Bắc",
+        "customers": 1766,
+        "churn_rate": 0.9802
+      },
+      {
+        "name": "Miền Nam",
+        "customers": 9871,
+        "churn_rate": 0.9595
+      },
+      {
+        "name": "Miền Trung",
+        "customers": 1979,
+        "churn_rate": 0.9586
+      },
+      {
+        "name": "Chưa xác định",
+        "customers": 1,
+        "churn_rate": null
+      }
+    ],
+    "weekly_trend": [
+      {
+        "cutoff": "2022-07-11",
+        "active_customers": 3,
+        "churn_rate": null
+      },
+      {
+        "cutoff": "2022-07-18",
+        "active_customers": 1,
+        "churn_rate": null
+      },
+      {
+        "cutoff": "2022-08-01",
+        "active_customers": 1,
+        "churn_rate": null
+      },
+      {
+        "cutoff": "2022-08-08",
+        "active_customers": 1,
+        "churn_rate": null
+      },
+      {
+        "cutoff": "2022-08-15",
+        "active_customers": 2,
+        "churn_rate": null
+      },
+      {
+        "cutoff": "2022-08-22",
+        "active_customers": 3,
+        "churn_rate": null
+      },
+      {
+        "cutoff": "2022-08-29",
+        "active_customers": 4,
+        "churn_rate": null
+      },
+      {
+        "cutoff": "2022-09-05",
+        "active_customers": 8,
+        "churn_rate": null
+      },
+      {
+        "cutoff": "2022-09-12",
+        "active_customers": 12,
+        "churn_rate": 1.0
+      },
+      {
+        "cutoff": "2022-09-19",
+        "active_customers": 21,
+        "churn_rate": 1.0
+      },
+      {
+        "cutoff": "2022-09-26",
+        "active_customers": 58,
+        "churn_rate": 1.0
+      },
+      {
+        "cutoff": "2022-10-03",
+        "active_customers": 165,
+        "churn_rate": 0.9818
+      },
+      {
+        "cutoff": "2022-10-10",
+        "active_customers": 848,
+        "churn_rate": 0.9764
+      },
+      {
+        "cutoff": "2022-10-17",
+        "active_customers": 4237,
+        "churn_rate": 0.9559
+      },
+      {
+        "cutoff": "2022-10-24",
+        "active_customers": 7893,
+        "churn_rate": 0.9513
+      },
+      {
+        "cutoff": "2022-10-31",
+        "active_customers": 11655,
+        "churn_rate": 0.9592
+      }
+    ]
+  },
+  "min_group_size_for_rates": 10,
+  "prediction": {
+    "model": "XGBoost",
+    "test_customers": 2724,
+    "risk_distribution": {
+      "High": 282,
+      "Medium": 1801,
+      "Low": 641
+    },
+    "probability_histogram": [
+      {
+        "from": 0.0,
+        "to": 0.1,
+        "count": 0
+      },
+      {
+        "from": 0.1,
+        "to": 0.2,
+        "count": 0
+      },
+      {
+        "from": 0.2,
+        "to": 0.3,
+        "count": 44
+      },
+      {
+        "from": 0.3,
+        "to": 0.4,
+        "count": 597
+      },
+      {
+        "from": 0.4,
+        "to": 0.5,
+        "count": 257
+      },
+      {
+        "from": 0.5,
+        "to": 0.6,
+        "count": 637
+      },
+      {
+        "from": 0.6,
+        "to": 0.7,
+        "count": 907
+      },
+      {
+        "from": 0.7,
+        "to": 0.8,
+        "count": 226
+      },
+      {
+        "from": 0.8,
+        "to": 0.9,
+        "count": 56
+      },
+      {
+        "from": 0.9,
+        "to": 1.0,
+        "count": 0
+      }
+    ]
+  },
+  "feature_importance": [
+    {
+      "feature": "pending_rate",
+      "label": "Tỷ lệ đơn đang xử lý",
+      "importance": 0.2354,
+      "direction": "giảm rủi ro"
+    },
+    {
+      "feature": "recency_days",
+      "label": "Số ngày từ đơn gần nhất (Recency)",
+      "importance": 0.2043,
+      "direction": "tăng rủi ro"
+    },
+    {
+      "feature": "region__Miền Bắc",
+      "label": "Vùng: Miền Bắc",
+      "importance": 0.1265,
+      "direction": "tăng rủi ro"
+    },
+    {
+      "feature": "processing_hours_mean",
+      "label": "Thời gian xử lý đơn TB (giờ)",
+      "importance": 0.0994,
+      "direction": "tăng rủi ro"
+    },
+    {
+      "feature": "avg_order_value_log",
+      "label": "Giá trị đơn trung bình",
+      "importance": 0.0601,
+      "direction": "tăng rủi ro"
+    },
+    {
+      "feature": "monetary_log",
+      "label": "Giá trị đơn thành công (Monetary)",
+      "importance": 0.0447,
+      "direction": "tăng rủi ro"
+    },
+    {
+      "feature": "tenure_days",
+      "label": "Khoảng cách đơn đầu – đơn cuối",
+      "importance": 0.0428,
+      "direction": "giảm rủi ro"
+    },
+    {
+      "feature": "completed_rate",
+      "label": "Tỷ lệ đơn thành công",
+      "importance": 0.0273,
+      "direction": "tăng rủi ro"
+    },
+    {
+      "feature": "primary_channel__Unknown/Other",
+      "label": "Kênh chính: Unknown/Other",
+      "importance": 0.0266,
+      "direction": "giảm rủi ro"
+    },
+    {
+      "feature": "customer_age_days",
+      "label": "Số ngày từ đơn đầu tiên",
+      "importance": 0.0237,
+      "direction": "tăng rủi ro"
+    },
+    {
+      "feature": "region__Miền Nam",
+      "label": "Vùng: Miền Nam",
+      "importance": 0.0231,
+      "direction": "giảm rủi ro"
+    },
+    {
+      "feature": "mean_interpurchase_days",
+      "label": "Chu kỳ mua lại trung bình",
+      "importance": 0.0225,
+      "direction": "giảm rủi ro"
+    },
+    {
+      "feature": "orders_last_7d",
+      "label": "Số đơn 7 ngày gần nhất",
+      "importance": 0.016,
+      "direction": "giảm rủi ro"
+    },
+    {
+      "feature": "primary_channel__TikTok Shop",
+      "label": "Kênh chính: TikTok Shop",
+      "importance": 0.0141,
+      "direction": "tăng rủi ro"
+    },
+    {
+      "feature": "return_rate",
+      "label": "Tỷ lệ đơn hoàn trả",
+      "importance": 0.0113,
+      "direction": "tăng rủi ro"
+    }
+  ]
+}

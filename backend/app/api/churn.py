@@ -85,6 +85,7 @@ def _score_batch(raw: bytes, as_of: Optional[datetime], max_items: int) -> Dict[
             "primary_channel": str(primary.loc[cid]),
             "region": str(a["region"]),
             "churn_probability_pct": round(float(s["churn_prob"]) * 100, 2),
+            "repurchase_probability_pct": round(float(s["repurchase_prob"]) * 100, 2),
             "risk_level": s["risk_level"],
             "rfm_segment": s["rfm_segment"],
             "alert_level": s["alert_level"],

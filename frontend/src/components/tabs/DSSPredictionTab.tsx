@@ -60,7 +60,7 @@ export const DSSPredictionTab: React.FC = () => {
           region,
         }),
         segment === AUTO_SEGMENT
-          ? predictRFM({ recency: recencyDays, frequency: totalOrders, monetary })
+          ? predictRFM({ recency: recencyDays, frequency: completedOrders, monetary })
           : Promise.resolve(null),
       ]);
       setChurnRes(churnData);
@@ -73,7 +73,7 @@ export const DSSPredictionTab: React.FC = () => {
         rfm_segment: rfmSegment,
         churn_risk: churnData.churn_probability,
         recency: recencyDays,
-        frequency: totalOrders,
+        frequency: completedOrders,
         monetary,
       });
       setDssRes(dssData);
@@ -171,6 +171,9 @@ export const DSSPredictionTab: React.FC = () => {
                 <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>Xác Suất Churn</div>
                 <div style={{ fontSize: '2rem', fontWeight: 800, color: '#a855f7' }}>
                   {churnRes.churn_probability_pct}%
+                </div>
+                <div style={{ fontSize: '0.82rem', color: '#10b981' }}>
+                  Xu hướng mua lại: <strong>{churnRes.repurchase_probability_pct}%</strong>
                 </div>
               </div>
             </div>

@@ -44,13 +44,22 @@ def test_store_levels_sorting_and_no_raw_id(store):
 
 
 def test_store_query_filters_and_paging(store):
-    res = store.query(["CRITICAL", "HIGH"])
+    res = store.risk(["CRITICAL", "HIGH"])
     assert res["total"] == 3 and res["population"] == 4
     assert res["alert_counts"] == {"CRITICAL": 1, "HIGH": 2, "MEDIUM": 0, "LOW": 1}
-    assert store.query(["CRITICAL", "HIGH"], region="Miền Bắc")["total"] == 1
-    assert store.query(None, segment="VIP")["total"] == 2
-    p2 = store.query(None, page=2, page_size=3)
+    assert store.risk(["CRITICAL", "HIGH"], region="Miền Bắc")["total"] == 1
+    assert store.risk(None, segment="VIP")["total"] == 2
+    p2 = store.risk(None, page=2, page_size=3)
     assert len(p2["items"]) == 1 and p2["total"] == 4
+
+
+def test_store_opportunities(store):
+    res = store.opportunities()
+    # Chỉ khách VIP/Tiềm năng có xác suất mua lại >= 60%: KH 4 (VIP, churn 10% -> mua lại 90%)
+    assert res["total"] == 1 and res["opportunity_count"] == 1
+    it = res["items"][0]
+    assert it["segment"] == "VIP" and it["repurchase_prob_pct"] == 90.0
+    assert it["recommendations"]  # DSS vẫn có khuyến nghị (tri ân / cross-sell)
 
 
 # ------------------------------------------------------------------ API (dữ liệu thật)
@@ -83,6 +92,21 @@ def test_high_risk_list(client, auth):
     assert r2.status_code == 200 and all(it["alert_level"] == "LOW" for it in r2.json()["items"])
     assert client.get("/api/customers/high-risk", headers=auth, params={"alert_level": "BAD"}).status_code == 422
     assert client.get("/api/customers/high-risk", headers=auth, params={"page_size": 500}).status_code == 422
+
+
+@requires_scored
+def test_opportunities_api(client, auth):
+    assert client.get("/api/customers/opportunities").status_code == 401
+    r = client.get("/api/customers/opportunities", headers=auth, params={"page_size": 50})
+    assert r.status_code == 200
+    d = r.json()
+    assert d["total"] == d["opportunity_count"]
+    items = d["items"]
+    assert all(it["segment"] in ("VIP", "Tiềm năng") and it["repurchase_prob_pct"] >= 60 for it in items)
+    probs = [it["repurchase_prob_pct"] for it in items]
+    assert probs == sorted(probs, reverse=True)
+    assert all(abs(it["repurchase_prob_pct"] + it["churn_prob_pct"] - 100) < 0.02 for it in items)
+    assert not PHONE_ID.search(r.text)
 
 
 @requires_scored

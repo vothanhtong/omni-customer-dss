@@ -122,3 +122,16 @@ def test_batch_matches_single():
     items = [{"rfm_segment": s, "churn_risk": c, "customer_id": f"C{i}"} for i, (s, c) in enumerate(
         [(seg, ch) for seg in SEGMENTS for ch in (5, 50, 90)])]
     assert evaluate_batch_dss(items) == [evaluate_customer_dss(x) for x in items]
+
+
+def test_describe_rules_matches_rule_table():
+    from backend.app.core.dss_engine import RULES, describe_rules
+    rows = describe_rules()
+    assert [r["rule_id"] for r in rows] == [r.rule_id for r in RULES]
+    r02 = next(r for r in rows if r["rule_id"] == "R02_HIGH_CHURN")
+    assert r02["churn_interval"] == "(70%, 100%]" and "trừ VIP" in r02["segments"]
+
+
+def test_rules_endpoint(client):
+    r = client.get("/api/dss/rules")
+    assert r.status_code == 200 and len(r.json()) >= 10

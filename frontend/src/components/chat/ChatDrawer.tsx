@@ -41,7 +41,7 @@ export const ChatDrawer: React.FC = () => {
         <div className="drawer-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <MessageSquare size={20} color="#06b6d4" />
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Ứng Dụng Chat Realtime</h3>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Trợ Lý & Ghi Chú CSKH</h3>
           </div>
           <button className="drawer-close-btn" onClick={closeChatDrawer} title="Đóng">
             <X size={18} />
@@ -54,13 +54,13 @@ export const ChatDrawer: React.FC = () => {
             onClick={() => setActiveChatChannel('dss_ai')}
             className={`chat-tab-btn ${activeChatChannel === 'dss_ai' ? 'active' : ''}`}
           >
-            <Bot size={16} /> 🤖 Trợ Lý AI DSS
+            <Bot size={16} /> 📋 Trợ lý gợi ý theo luật
           </button>
           <button
             onClick={() => setActiveChatChannel('cskh_team')}
             className={`chat-tab-btn ${activeChatChannel === 'cskh_team' ? 'active' : ''}`}
           >
-            <Users size={16} /> 👥 Nhóm CSKH Nội Bộ
+            <Users size={16} /> 🗒️ Ghi chú CSKH
           </button>
         </div>
 
@@ -109,9 +109,23 @@ export const ChatDrawer: React.FC = () => {
             <button
               type="button"
               className="quick-chip"
+              onClick={() => handleQuickPrompt('Có bao nhiêu khách tiềm năng có xu hướng mua lại?')}
+            >
+              Khách tiềm năng?
+            </button>
+            <button
+              type="button"
+              className="quick-chip"
               onClick={() => handleQuickPrompt('Phân cụm RFM hiện tại của hệ thống như thế nào?')}
             >
               Phân cụm RFM?
+            </button>
+            <button
+              type="button"
+              className="quick-chip"
+              onClick={() => handleQuickPrompt('Mô hình dự đoán chính xác đến đâu?')}
+            >
+              Độ tin cậy mô hình?
             </button>
           </div>
         )}
@@ -121,7 +135,7 @@ export const ChatDrawer: React.FC = () => {
           <input
             type="text"
             className="chat-input-box"
-            placeholder={activeChatChannel === 'dss_ai' ? 'Hỏi trợ lý AI về rủi ro, phân cụm hoặc voucher...' : 'Nhắn tin cho nhóm CSKH...'}
+            placeholder={activeChatChannel === 'dss_ai' ? 'Hỏi về rủi ro rời bỏ, VIP, khách tiềm năng, RFM, mô hình...' : 'Ghi chú cho nhóm CSKH...'}
             value={inputVal}
             onChange={(e) => setInputVal(e.target.value)}
           />

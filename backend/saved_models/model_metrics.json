@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-18T11:52:26+00:00",
+  "generated_at": "2026-11-22T03:09:52+00:00",
   "data_source": "Cleaned_data/orders_cleaned.csv + train_churn_oot.csv / test_churn_oot.csv",
   "churn": {
     "target_definition": "target = 1 nếu khách KHÔNG phát sinh đơn mới trong cửa sổ kết quả (sau cutoff)",
@@ -728,7 +728,7 @@
         ],
         "importance_method": "Gini importance",
         "class_balancing": "class_weight = balanced",
-        "train_seconds": 0.5
+        "train_seconds": 0.6
       },
       {
         "model": "Random Forest",
@@ -1102,7 +1102,7 @@
           "test_balanced_accuracy": 0.5,
           "test_retained_recall": 0.0
         },
-        "train_seconds": 46.4,
+        "train_seconds": 45.7,
         "shap_seconds": 0.7
       },
       {
@@ -1478,7 +1478,7 @@
           "test_balanced_accuracy": 0.5,
           "test_retained_recall": 0.0
         },
-        "train_seconds": 5.6,
+        "train_seconds": 5.5,
         "shap_seconds": 0.0
       }
     ],
@@ -1493,8 +1493,61 @@
       "frequency_log",
       "monetary_log"
     ],
-    "k": 4,
-    "labeling_rule": "score = -Recency_z + log(Frequency)_z + log(Monetary)_z trên tâm cụm; cao nhất = VIP",
+    "k": 5,
+    "k_selection": "Silhouette cao nhất trong K ∈ [4, 8] (K >= 4 để đủ 4 phân khúc nghiệp vụ)",
+    "labeling_rule": "Frequency = số đơn thành công; xếp hạng tâm cụm theo score = -Recency_z + log(1+F)_z + log(1+M)_z: hạng 1 = VIP, 2 = Tiềm năng, 3 = Cần chăm sóc, còn lại = Rủi ro",
+    "clusters": [
+      {
+        "cluster_id": 3,
+        "segment": "VIP",
+        "customers": 1045,
+        "composite_score": 2.7894,
+        "repeat_share": 1.0,
+        "centroid_recency_days": 12.3,
+        "centroid_frequency": 2.12,
+        "centroid_monetary_vnd": 630352.0
+      },
+      {
+        "cluster_id": 0,
+        "segment": "Tiềm năng",
+        "customers": 7542,
+        "composite_score": 1.4928,
+        "repeat_share": 0.0,
+        "centroid_recency_days": 9.9,
+        "centroid_frequency": 1.0,
+        "centroid_monetary_vnd": 296539.0
+      },
+      {
+        "cluster_id": 2,
+        "segment": "Cần chăm sóc",
+        "customers": 6295,
+        "composite_score": -0.0036,
+        "repeat_share": 0.0059,
+        "centroid_recency_days": 25.4,
+        "centroid_frequency": 1.0,
+        "centroid_monetary_vnd": 306962.0
+      },
+      {
+        "cluster_id": 1,
+        "segment": "Rủi ro",
+        "customers": 2904,
+        "composite_score": -2.5387,
+        "repeat_share": 0.0,
+        "centroid_recency_days": 4.3,
+        "centroid_frequency": 0.0,
+        "centroid_monetary_vnd": -0.0
+      },
+      {
+        "cluster_id": 4,
+        "segment": "Rủi ro",
+        "customers": 1314,
+        "composite_score": -5.1589,
+        "repeat_share": 0.0,
+        "centroid_recency_days": 31.3,
+        "centroid_frequency": 0.0,
+        "centroid_monetary_vnd": -0.0
+      }
+    ],
     "elbow": [
       {
         "k": 1,
@@ -1502,123 +1555,132 @@
       },
       {
         "k": 2,
-        "sse": 37594.53
+        "sse": 20802.02
       },
       {
         "k": 3,
-        "sse": 20847.05
+        "sse": 12490.2
       },
       {
         "k": 4,
-        "sse": 13132.73
+        "sse": 6373.41
       },
       {
         "k": 5,
-        "sse": 7371.62
+        "sse": 4674.89
       },
       {
         "k": 6,
-        "sse": 5909.19
+        "sse": 3590.47
       },
       {
         "k": 7,
-        "sse": 4956.5
+        "sse": 3070.9
       },
       {
         "k": 8,
-        "sse": 4160.8
+        "sse": 2543.09
       },
       {
         "k": 9,
-        "sse": 3653.29
+        "sse": 2163.15
       },
       {
         "k": 10,
-        "sse": 3110.18
+        "sse": 1845.22
       }
     ],
     "silhouette": [
       {
         "k": 2,
-        "silhouette": 0.5339
+        "silhouette": 0.6875
       },
       {
         "k": 3,
-        "silhouette": 0.6175
+        "silhouette": 0.5951
       },
       {
         "k": 4,
-        "silhouette": 0.602
+        "silhouette": 0.6356
       },
       {
         "k": 5,
-        "silhouette": 0.6708
+        "silhouette": 0.6644
       },
       {
         "k": 6,
-        "silhouette": 0.6744
+        "silhouette": 0.6156
       },
       {
         "k": 7,
-        "silhouette": 0.6214
+        "silhouette": 0.6049
       },
       {
         "k": 8,
-        "silhouette": 0.5975
+        "silhouette": 0.5681
       }
     ],
     "segments": [
       {
         "cluster_id": 3,
+        "cluster_ids": [
+          3
+        ],
         "segment": "VIP",
-        "customers": 1791,
-        "share": 0.0938,
-        "composite_score": 3.7991,
-        "mean_recency_days": 11.4,
-        "mean_frequency": 2.2,
-        "mean_monetary_vnd": 527003.0,
-        "centroid_recency_days": 11.4,
-        "centroid_frequency": 2.16,
-        "centroid_monetary_vnd": 176224.0
+        "customers": 1045,
+        "share": 0.0547,
+        "composite_score": 2.7894,
+        "mean_recency_days": 12.3,
+        "mean_frequency": 2.14,
+        "repeat_share": 1.0,
+        "mean_monetary_vnd": 691784.0,
+        "median_monetary_vnd": 626000.0
       },
       {
         "cluster_id": 0,
+        "cluster_ids": [
+          0
+        ],
         "segment": "Tiềm năng",
-        "customers": 7394,
-        "share": 0.3871,
-        "composite_score": 0.7314,
-        "mean_recency_days": 10.4,
+        "customers": 7542,
+        "share": 0.3949,
+        "composite_score": 1.4928,
+        "mean_recency_days": 9.9,
         "mean_frequency": 1.0,
-        "mean_monetary_vnd": 313111.0,
-        "centroid_recency_days": 10.4,
-        "centroid_frequency": 1.0,
-        "centroid_monetary_vnd": 293957.0
+        "repeat_share": 0.0,
+        "mean_monetary_vnd": 316137.0,
+        "median_monetary_vnd": 300000.0
       },
       {
         "cluster_id": 2,
+        "cluster_ids": [
+          2
+        ],
         "segment": "Cần chăm sóc",
-        "customers": 6052,
-        "share": 0.3169,
-        "composite_score": -0.9167,
-        "mean_recency_days": 26.6,
-        "mean_frequency": 1.0,
-        "mean_monetary_vnd": 315104.0,
-        "centroid_recency_days": 26.6,
-        "centroid_frequency": 1.0,
-        "centroid_monetary_vnd": 197141.0
+        "customers": 6295,
+        "share": 0.3296,
+        "composite_score": -0.0036,
+        "mean_recency_days": 25.4,
+        "mean_frequency": 1.01,
+        "repeat_share": 0.0059,
+        "mean_monetary_vnd": 327053.0,
+        "median_monetary_vnd": 300000.0
       },
       {
         "cluster_id": 1,
+        "cluster_ids": [
+          1,
+          4
+        ],
         "segment": "Rủi ro",
-        "customers": 3863,
-        "share": 0.2023,
-        "composite_score": -1.7251,
-        "mean_recency_days": 11.1,
-        "mean_frequency": 1.0,
+        "customers": 4218,
+        "share": 0.2208,
+        "composite_score": -2.5387,
+        "mean_recency_days": 12.7,
+        "mean_frequency": 0.0,
+        "repeat_share": 0.0,
         "mean_monetary_vnd": 0.0,
-        "centroid_recency_days": 11.1,
-        "centroid_frequency": 1.0,
-        "centroid_monetary_vnd": -0.0
+        "median_monetary_vnd": 0.0
       }
     ]
   }

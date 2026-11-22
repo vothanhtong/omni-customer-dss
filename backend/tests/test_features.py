@@ -104,6 +104,17 @@ def test_rank_rfm_centroids_uses_all_three_dimensions():
     assert fe.rank_rfm_centroids(centroids) == {1: "VIP", 2: "Tiềm năng", 3: "Cần chăm sóc", 0: "Rủi ro"}
 
 
+def test_rank_rfm_centroids_merges_extra_clusters_into_at_risk():
+    centroids = np.array([
+        [0.0, 2.0, 2.0],    # 4.0  -> VIP
+        [-1.0, 0.0, 0.0],   # 1.0  -> Tiềm năng
+        [0.5, 0.0, 0.0],    # -0.5 -> Cần chăm sóc
+        [-1.5, -2.0, -2.0], # -2.5 -> Rủi ro
+        [1.0, -2.0, -2.0],  # -5.0 -> Rủi ro (cụm thứ 5 gộp vào Rủi ro)
+    ])
+    assert fe.rank_rfm_centroids(centroids) == {0: "VIP", 1: "Tiềm năng", 2: "Cần chăm sóc", 3: "Rủi ro", 4: "Rủi ro"}
+
+
 def test_rfm_feature_frame_log_transform():
     X = fe.rfm_feature_frame([10], [1], [0])
     assert list(X.columns) == ["recency", "frequency_log", "monetary_log"]

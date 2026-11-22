@@ -72,7 +72,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ activeTab }) => {
         <button
           onClick={openChatDrawer}
           className="header-icon-btn"
-          title="Mở ứng dụng Live Chat CSKH & Trợ lý AI DSS"
+          title="Mở trợ lý gợi ý theo luật & ghi chú CSKH"
         >
           <MessageSquare size={18} />
           {unreadChatCount > 0 && (

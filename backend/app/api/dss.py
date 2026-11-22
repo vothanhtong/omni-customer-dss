@@ -6,15 +6,34 @@ from fastapi import APIRouter, HTTPException, status
 try:
     from backend.app.schemas.dss import DSSRequest, DSSResponse
     from backend.app.schemas import dump_model
-    from backend.app.core.dss_engine import evaluate_customer_dss, evaluate_batch_dss
+    from backend.app.core.dss_engine import describe_rules, evaluate_customer_dss, evaluate_batch_dss
     from backend.app.core.database import db_manager
+    from backend.app.api.deps import artifact_or_503
 except ImportError:
     from app.schemas.dss import DSSRequest, DSSResponse
     from app.schemas import dump_model
-    from app.core.dss_engine import evaluate_customer_dss, evaluate_batch_dss
+    from app.core.dss_engine import describe_rules, evaluate_customer_dss, evaluate_batch_dss
     from app.core.database import db_manager
+    from app.api.deps import artifact_or_503
 
 router = APIRouter(prefix="/api/dss", tags=["DSS Engine"])
+
+
+@router.get("/evaluation")
+def dss_evaluation():
+    """
+    Đánh giá hiệu quả DSS trên tập kiểm tra out-of-time (sinh bởi train_pipeline.py -> dss_evaluation.json):
+    tỷ lệ rời bỏ/mua lại thực tế theo mức cảnh báo, lift của cảnh báo khách tiềm năng, độ phủ luật, cumulative gains.
+    Chỉ số liệu gộp và case study với ID đã che.
+    """
+    return artifact_or_503("dss_evaluation.json")
+
+
+@router.get("/rules")
+def list_rules():
+    """Bảng luật DSS (mức cảnh báo, phân khúc, khoảng xác suất churn, cảnh báo, khuyến nghị) — theo thứ tự ưu tiên khai báo."""
+    return describe_rules()
+
 
 @router.post("/evaluate", response_model=DSSResponse)
 async def evaluate_dss(payload: DSSRequest):

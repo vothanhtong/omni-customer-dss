@@ -309,8 +309,10 @@ def rank_rfm_centroids(centroids_scaled: np.ndarray) -> Dict[int, str]:
     """
     Xếp hạng tâm cụm theo điểm tổng hợp trên không gian đã chuẩn hóa:
         score = -R_z + F_z + M_z   (Recency càng thấp càng tốt nên đảo dấu)
-    Điểm cao nhất -> VIP, rồi Tiềm năng, Cần chăm sóc, thấp nhất -> Rủi ro.
+    Hạng 1 -> VIP, hạng 2 -> Tiềm năng, hạng 3 -> Cần chăm sóc, các hạng còn lại -> Rủi ro
+    (K > 4: nhiều cụm điểm thấp cùng gộp vào phân khúc Rủi ro).
     """
     scores = -centroids_scaled[:, 0] + centroids_scaled[:, 1] + centroids_scaled[:, 2]
     order = np.argsort(-scores)
-    return {int(cid): SEGMENT_LABELS[rank] for rank, cid in enumerate(order)}
+    last = len(SEGMENT_LABELS) - 1
+    return {int(cid): SEGMENT_LABELS[min(rank, last)] for rank, cid in enumerate(order)}

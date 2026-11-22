@@ -91,6 +91,7 @@ def test_batch_api_ok(client, auth):
     assert not PHONE_ID.search(r.text)  # chỉ trả ID đã che
     assert all(it["display_id"].startswith("KH_0900***") for it in d["items"])
     assert all(0 <= it["churn_probability_pct"] <= 100 and it["recommendation"] for it in d["items"])
+    assert all(abs(it["churn_probability_pct"] + it["repurchase_probability_pct"] - 100) < 0.02 for it in d["items"])
     assert all(it["top_factors"] for it in d["items"])
     assert sum(d["summary"]["risk_distribution"].values()) == 2
 

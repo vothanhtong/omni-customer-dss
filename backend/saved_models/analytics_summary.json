@@ -208,42 +208,42 @@
       {
         "cutoff": "2022-07-11",
         "active_customers": 3,
-        "churn_rate": 1.0
+        "churn_rate": null
       },
       {
         "cutoff": "2022-07-18",
         "active_customers": 1,
-        "churn_rate": 1.0
+        "churn_rate": null
       },
       {
         "cutoff": "2022-08-01",
         "active_customers": 1,
-        "churn_rate": 1.0
+        "churn_rate": null
       },
       {
         "cutoff": "2022-08-08",
         "active_customers": 1,
-        "churn_rate": 1.0
+        "churn_rate": null
       },
       {
         "cutoff": "2022-08-15",
         "active_customers": 2,
-        "churn_rate": 1.0
+        "churn_rate": null
       },
       {
         "cutoff": "2022-08-22",
         "active_customers": 3,
-        "churn_rate": 1.0
+        "churn_rate": null
       },
       {
         "cutoff": "2022-08-29",
         "active_customers": 4,
-        "churn_rate": 1.0
+        "churn_rate": null
       },
       {
         "cutoff": "2022-09-05",
         "active_customers": 8,
-        "churn_rate": 1.0
+        "churn_rate": null
       },
       {
         "cutoff": "2022-09-12",

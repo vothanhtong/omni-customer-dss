@@ -82,6 +82,8 @@ class ChurnFactor(BaseModel):
 class ChurnPredictionResponse(BaseModel):
     churn_probability: float
     churn_probability_pct: float
+    repurchase_probability: float       # xu hướng mua = 1 - churn_probability
+    repurchase_probability_pct: float
     churn_prediction: int
     risk_level: str
     model_name: str
@@ -98,6 +100,7 @@ class BatchCustomerResult(BaseModel):
     primary_channel: str
     region: str
     churn_probability_pct: float
+    repurchase_probability_pct: float
     risk_level: str
     rfm_segment: str
     alert_level: str

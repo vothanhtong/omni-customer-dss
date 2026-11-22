@@ -3,7 +3,6 @@ ML Model Management Module - nạp & suy luận cho mô hình RFM (K-Means) và 
 Mô hình được sinh bởi backend/train_pipeline.py trên dữ liệu thật (Cleaned_data/).
 """
 
-import json
 import os
 from typing import Any, Dict, Optional
 
@@ -11,11 +10,11 @@ from typing import Any, Dict, Optional
 import joblib
 import pandas as pd
 
+from backend.app.core.artifacts import load_json_artifact
 from backend.app.core.config import SAVED_MODELS_DIR
 from backend.ml.feature_engineering import CHANNEL_COUNT_COLS, build_model_features, rfm_feature_frame
 from backend.ml.explain import explain_rows, make_explainer
 
-METRICS_PATH = os.path.join(SAVED_MODELS_DIR, "model_metrics.json")
 RISK_HIGH, RISK_MEDIUM = 0.7, 0.4
 
 _ARTIFACTS = {
@@ -80,10 +79,8 @@ def risk_level_of(churn_prob: float) -> str:
 
 
 def load_metrics() -> Optional[Dict[str, Any]]:
-    if not os.path.exists(METRICS_PATH):
-        return None
-    with open(METRICS_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)
+    """model_metrics.json (cache theo mtime, chỉ đọc)."""
+    return load_json_artifact("model_metrics.json")
 
 
 class MLModelManager:
@@ -152,6 +149,9 @@ class MLModelManager:
         return {
             "churn_probability": round(churn_prob, 4),
             "churn_probability_pct": round(churn_prob * 100.0, 2),
+            # Xu hướng mua (công việc 4.2): nhãn churn = "không mua lại trong cửa sổ" => P(mua lại) = 1 - P(churn)
+            "repurchase_probability": round(1.0 - churn_prob, 4),
+            "repurchase_probability_pct": round((1.0 - churn_prob) * 100.0, 2),
             "churn_prediction": int(churn_prob >= 0.5),
             "risk_level": risk_level_of(churn_prob),
             "model_name": self.churn_model_name,
@@ -169,11 +169,12 @@ class MLModelManager:
         X = build_model_features(agg, processing_hours_fill=fill)[self.churn_features]
         proba = self.churn_model.predict_proba(X)[:, 1]
 
-        rfm_X = rfm_feature_frame(agg["recency_days"], agg["total_orders"], agg["monetary"])
+        rfm_X = rfm_feature_frame(agg["recency_days"], agg["completed_orders"], agg["monetary"])  # F = đơn thành công
         clusters = self.kmeans_model.predict(self.scaler_rfm.transform(rfm_X))
 
         out = pd.DataFrame(index=agg.index)
         out["churn_prob"] = proba
+        out["repurchase_prob"] = 1.0 - proba
         out["risk_level"] = [risk_level_of(p) for p in proba]
         out["rfm_segment"] = [self.segment_map.get(int(c), f"Cluster {int(c)}") for c in clusters]
         out["top_factors"] = [[] for _ in range(len(out))]

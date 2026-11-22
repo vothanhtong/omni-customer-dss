@@ -155,3 +155,27 @@ def evaluate_customer_dss(customer_info: Dict[str, Any]) -> Dict[str, Any]:
 def evaluate_batch_dss(customers_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Xử lý quy tắc DSS cho danh sách nhiều khách hàng."""
     return [evaluate_customer_dss(cust) for cust in customers_list]
+
+
+def describe_rules() -> List[Dict[str, Any]]:
+    """Bảng luật DSS ở dạng đọc được (cho API /api/dss/rules, trợ lý gợi ý và báo cáo)."""
+    def interval(r: Rule) -> str:
+        lo = "(" if r.min_exclusive else "["
+        hi = ")" if r.max_exclusive else "]"
+        return f"{lo}{r.churn_min:g}%, {r.churn_max:g}%{hi}"
+
+    out = []
+    for r in RULES:
+        if r.segments is None:
+            seg = "Mọi phân khúc" + (f" trừ {', '.join(sorted(r.exclude_segments))}" if r.exclude_segments else "")
+        else:
+            seg = ", ".join(sorted(r.segments))
+        out.append({
+            "rule_id": r.rule_id,
+            "level": r.level,
+            "segments": seg,
+            "churn_interval": interval(r),
+            "warning": r.warning,
+            "recommendation": r.recommendation,
+        })
+    return out

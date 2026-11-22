@@ -11,19 +11,28 @@ import hashlib
 import hmac
 import os
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import pandas as pd
 
 try:
     from backend.app.core.config import JWT_SECRET, SAVED_MODELS_DIR
-    from backend.app.core.dss_engine import evaluate_customer_dss
+    from backend.app.core.dss_engine import MEDIUM_MIN, evaluate_customer_dss
 except ImportError:
     from app.core.config import JWT_SECRET, SAVED_MODELS_DIR
-    from app.core.dss_engine import evaluate_customer_dss
+    from app.core.dss_engine import MEDIUM_MIN, evaluate_customer_dss
 
 SCORED_PATH = os.path.join(SAVED_MODELS_DIR, "scored_customers.csv")
 ALERT_ORDER = {"CRITICAL": 3, "HIGH": 2, "MEDIUM": 1, "LOW": 0}
+
+# Cảnh báo khách tiềm năng (công việc 4.4): phân khúc giá trị + xác suất mua lại >= 60% (= rủi ro churn thấp, < 40%)
+OPPORTUNITY_SEGMENTS = ("VIP", "Tiềm năng")
+OPPORTUNITY_MIN_REPURCHASE_PCT = 100.0 - MEDIUM_MIN  # mua lại >= 60% <=> churn <= ngưỡng rủi ro trung bình của DSS
+
+
+def is_opportunity(segment: str, churn_prob: float) -> bool:
+    """Khách tiềm năng: phân khúc giá trị và xác suất mua lại (1 - P(churn)) đủ cao. Dùng chung cho API và đánh giá DSS."""
+    return segment in OPPORTUNITY_SEGMENTS and (1.0 - churn_prob) * 100 >= OPPORTUNITY_MIN_REPURCHASE_PCT
 
 
 class CustomersNotReadyError(RuntimeError):
@@ -53,6 +62,7 @@ class CustomerStore:
         self._mtime: Optional[float] = None
         self._rows: List[Dict[str, Any]] = []
         self._by_ref: Dict[str, Dict[str, Any]] = {}
+        self._summary: Dict[str, Any] = {}
 
     def _load(self) -> None:
         if not os.path.exists(self.path):
@@ -73,6 +83,7 @@ class CustomerStore:
                     "display_id": mask_customer_id(cid),
                     "segment": dss["rfm_segment"],
                     "churn_prob_pct": round(float(r.churn_prob) * 100, 2),
+                    "repurchase_prob_pct": round((1 - float(r.churn_prob)) * 100, 2),
                     "recency_days": float(r.recency),
                     "frequency": int(r.frequency),
                     "monetary": float(r.monetary),
@@ -82,8 +93,18 @@ class CustomerStore:
                     "warnings": dss["warnings"],
                     "recommendations": dss["recommendations"],
                     "matched_rules": dss["matched_rules"],
+                    "is_opportunity": is_opportunity(dss["rfm_segment"], float(r.churn_prob)),
                 })
             rows.sort(key=lambda x: (-ALERT_ORDER.get(x["alert_level"], 0), -x["churn_prob_pct"]))
+            counts = {lvl: 0 for lvl in ALERT_ORDER}
+            for x in rows:
+                counts[x["alert_level"]] += 1
+            self._summary = {  # không phụ thuộc bộ lọc -> tính một lần khi nạp
+                "alert_counts": counts,
+                "opportunity_count": sum(x["is_opportunity"] for x in rows),
+                "population": len(rows),
+                "facets": {k: sorted({x[f] for x in rows}) for k, f in (("segments", "segment"), ("channels", "channel"), ("regions", "region"))},
+            }
             self._rows = rows
             self._by_ref = {x["ref"]: x for x in rows}
             self._mtime = mtime
@@ -98,38 +119,40 @@ class CustomerStore:
 
     def query(
         self,
-        alert_levels: Optional[List[str]] = None,
+        include: Callable[[Dict[str, Any]], bool],
         segment: Optional[str] = None,
         channel: Optional[str] = None,
         region: Optional[str] = None,
         page: int = 1,
         page_size: int = 20,
+        sort_key: Optional[Callable[[Dict[str, Any]], Any]] = None,
     ) -> Dict[str, Any]:
-        rows = self.all()
+        """Lọc theo `include` + phân khúc/kênh/vùng, sắp xếp (mặc định: mức cảnh báo rồi P(churn) giảm dần), phân trang."""
+        self._load()
         sel = [
-            r for r in rows
-            if (not alert_levels or r["alert_level"] in alert_levels)
+            r for r in self._rows
+            if include(r)
             and (not segment or r["segment"] == segment)
             and (not channel or r["channel"] == channel)
             and (not region or r["region"] == region)
         ]
-        counts = {lvl: 0 for lvl in ALERT_ORDER}
-        for r in rows:
-            counts[r["alert_level"]] = counts.get(r["alert_level"], 0) + 1
+        if sort_key:
+            sel.sort(key=sort_key)
         start = (page - 1) * page_size
         return {
             "total": len(sel),
             "page": page,
             "page_size": page_size,
             "items": [dict(r) for r in sel[start:start + page_size]],
-            "alert_counts": counts,
-            "population": len(rows),
-            "facets": {
-                "segments": sorted({r["segment"] for r in rows}),
-                "channels": sorted({r["channel"] for r in rows}),
-                "regions": sorted({r["region"] for r in rows}),
-            },
+            **self._summary,
         }
+
+    def risk(self, alert_levels: Optional[List[str]] = None, **filters) -> Dict[str, Any]:
+        levels = set(alert_levels or ALERT_ORDER)
+        return self.query(lambda r: r["alert_level"] in levels, **filters)
+
+    def opportunities(self, **filters) -> Dict[str, Any]:
+        return self.query(lambda r: r["is_opportunity"], sort_key=lambda r: -r["repurchase_prob_pct"], **filters)
 
 
 customer_store = CustomerStore()

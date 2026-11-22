@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useModelMetrics, fmt, pct } from '../../context/MetricsContext';
-import { getAnalyticsOverview, getApiErrorMessage } from '../../services/api';
-import { AnalyticsOverview, ChurnGroupRow, DistributionRow } from '../../types/metrics';
+import { getAnalyticsOverview, getApiErrorMessage, getDssEvaluation } from '../../services/api';
+import { AnalyticsOverview, ChurnGroupRow, DistributionRow, DssEvaluation } from '../../types/metrics';
 import {
   DataTable, HBarChart, Legend, LineChart, StackedColumnChart,
   fmtInt, fmtPct, fmtVnd, seriesColor,
@@ -40,6 +40,7 @@ export const OverviewTab: React.FC = () => {
   const [data, setData] = useState<AnalyticsOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dssEval, setDssEval] = useState<DssEvaluation | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -54,6 +55,7 @@ export const OverviewTab: React.FC = () => {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { getDssEvaluation().then(setDssEval).catch(() => setDssEval(null)); }, []);
 
   const trend = useMemo(
     () => (data ? data.churn.weekly_trend.filter((w) => w.churn_rate !== null && w.active_customers >= data.min_group_size_for_rates) : []),
@@ -208,7 +210,7 @@ export const OverviewTab: React.FC = () => {
                 color: f.direction.startsWith('tăng') ? 'var(--risk-up)' : 'var(--risk-down)',
                 tooltip: [<strong>{f.label}</strong>, `mean |SHAP| = ${f.importance.toFixed(4)}`, `Xu hướng: ${f.direction}`, <code>{f.feature}</code>],
               }))} />
-              <div className="viz-note">Giá trị là trung bình |SHAP| trên tập kiểm tra, tức mức đóng góp trung bình của đặc trưng vào dự đoán.</div>
+              <div className="viz-note">Giá trị là trung bình |SHAP| trên mẫu ngẫu nhiên 800 khách của tập kiểm tra, tức mức đóng góp trung bình của đặc trưng vào dự đoán.</div>
               <DataTable headers={['Đặc trưng', 'mean |SHAP|', 'Xu hướng']}
                 rows={data.feature_importance.map((f) => [f.label, f.importance.toFixed(4), f.direction])} />
             </div>
@@ -216,7 +218,10 @@ export const OverviewTab: React.FC = () => {
         </>
       )}
 
-      {/* 7. CHẤT LƯỢNG MÔ HÌNH */}
+      {/* 7. ĐÁNH GIÁ HIỆU QUẢ DSS (công việc 6.2) */}
+      {dssEval && <DssEvaluationCard ev={dssEval} />}
+
+      {/* 8. CHẤT LƯỢNG MÔ HÌNH */}
       <div className="bi-card">
         <div className="bi-card-tag">Hiệu năng mô hình (Out-of-time test)</div>
         <h3 className="bi-card-title">Chỉ số mô hình Churn & RFM</h3>
@@ -267,3 +272,51 @@ const DistTable: React.FC<{ rows: DistributionRow[] }> = ({ rows }) => (
     rows={rows.map((r) => [r.name, fmtInt(r.orders), fmtInt(r.customers), fmtVnd(r.revenue_vnd), fmtPct(r.return_rate), fmtPct(r.cancel_rate)])}
   />
 );
+
+const DssEvaluationCard: React.FC<{ ev: DssEvaluation }> = ({ ev }) => {
+  const base = ev.data.base_actual_repurchase_rate;
+  const rows: [string, typeof ev.risk_alerts.alerted][] = [
+    ['Cảnh báo khách tiềm năng', ev.opportunity_alerts.alerted],
+    ['Không thuộc nhóm tiềm năng', ev.opportunity_alerts.not_alerted],
+    ['Cảnh báo rủi ro (Khẩn cấp/Cao)', ev.risk_alerts.alerted],
+    ['Không cảnh báo rủi ro', ev.risk_alerts.not_alerted],
+  ];
+  const top10 = ev.repurchase_ranking.top_10pct;
+  return (
+    <div className="bi-card" style={{ marginBottom: 20 }}>
+      <div className="bi-card-tag">Đánh giá hiệu quả DSS · tập kiểm tra out-of-time ({fmtInt(ev.data.customers)} khách)</div>
+      <h3 className="bi-card-title">Tỷ lệ mua lại THỰC TẾ theo nhóm cảnh báo</h3>
+      <div className="bi-risk-row">
+        <div className="bi-risk-tile">
+          <div className="lbl">Lift khách tiềm năng</div>
+          <div className="val">×{ev.opportunity_alerts.alerted.repurchase_lift ?? '—'}</div>
+          <div className="sub">{fmtPct(ev.opportunity_alerts.alerted.actual_repurchase_rate)} so với mức chung {fmtPct(base)}</div>
+        </div>
+        <div className="bi-risk-tile">
+          <div className="lbl">Top 10% xếp hạng mua lại</div>
+          <div className="val">{fmtPct(top10.captured_share)}</div>
+          <div className="sub">số khách thực sự mua lại được bắt (ngẫu nhiên: 10%)</div>
+        </div>
+        <div className="bi-risk-tile">
+          <div className="lbl">Churn thực tế nhóm rủi ro</div>
+          <div className="val">{fmtPct(ev.risk_alerts.alerted.actual_churn_rate)}</div>
+          <div className="sub">so với {fmtPct(ev.risk_alerts.not_alerted.actual_churn_rate)} ở nhóm còn lại</div>
+        </div>
+      </div>
+      <div style={{ maxWidth: 720 }}>
+      <HBarChart labelWidth={210} items={rows.map(([label, g]) => ({
+        label, value: g.actual_repurchase_rate ?? 0,
+        valueLabel: `${fmtPct(g.actual_repurchase_rate)} · n=${fmtInt(g.customers)}`,
+        tooltip: [<strong>{label}</strong>, `${fmtInt(g.customers)} khách`, `Mua lại thực tế: ${fmtPct(g.actual_repurchase_rate)} (${fmtInt(g.repurchased_customers)} khách)`,
+          `Lift so với mức chung: ×${g.repurchase_lift ?? '—'}`],
+      }))} />
+      </div>
+      <div className="viz-note">
+        Nhãn là hành vi thực tế trong cửa sổ kết quả sau mốc cutoff. Tỷ lệ mua lại chung chỉ {fmtPct(base)}, nên giá trị chính của hệ thống là
+        tìm đúng số ít khách sẽ quay lại; khác biệt churn giữa các nhóm rủi ro nhỏ vì phần lớn khách đều không mua lại trong cửa sổ ngắn.
+      </div>
+      <DataTable headers={['Luật', 'Mức', 'Số khách', 'Mua lại thực tế']}
+        rows={ev.rule_coverage.map((r) => [r.rule_id, r.level, fmtInt(r.customers), fmtPct(r.actual_repurchase_rate)])} />
+    </div>
+  );
+};

@@ -11,7 +11,7 @@ import {
   HighRiskQuery,
   BatchPredictionResponse
 } from '../types/customer';
-import { AnalyticsOverview, ModelMetrics } from '../types/metrics';
+import { AnalyticsOverview, DssEvaluation, ModelMetrics } from '../types/metrics';
 
 export const API_ROOT_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
 const API_BASE_URL = `${API_ROOT_URL}/api`;
@@ -117,18 +117,25 @@ export const getAnalyticsOverview = async (): Promise<AnalyticsOverview> => {
   return response.data;
 };
 
-/** Danh sách khách cảnh báo rủi ro (dữ liệu thật đã chấm điểm, không chứa customer_id gốc) */
-export const getHighRiskCustomers = async (q: HighRiskQuery): Promise<HighRiskPage> => {
+/** Tham số lọc chung cho danh sách khách hàng (URLSearchParams: alert_level lặp khóa, không dùng dạng alert_level[]) */
+const customerFilterParams = (q: Omit<HighRiskQuery, 'alert_level'> & { alert_level?: HighRiskQuery['alert_level'] }) => {
   const params = new URLSearchParams();
-  q.alert_level.forEach((l) => params.append('alert_level', l));
+  q.alert_level?.forEach((l) => params.append('alert_level', l));
   if (q.segment) params.set('segment', q.segment);
   if (q.channel) params.set('channel', q.channel);
   if (q.region) params.set('region', q.region);
   params.set('page', String(q.page));
   params.set('page_size', String(q.page_size));
-  const response = await apiClient.get<HighRiskPage>('/customers/high-risk', { params });
-  return response.data;
+  return params;
 };
+
+/** Danh sách khách cảnh báo rủi ro (dữ liệu thật đã chấm điểm, không chứa customer_id gốc) */
+export const getHighRiskCustomers = async (q: HighRiskQuery): Promise<HighRiskPage> =>
+  (await apiClient.get<HighRiskPage>('/customers/high-risk', { params: customerFilterParams(q) })).data;
+
+/** Cảnh báo khách tiềm năng: VIP/Tiềm năng có xác suất mua lại >= 60% */
+export const getOpportunityCustomers = async (q: Omit<HighRiskQuery, 'alert_level'>): Promise<HighRiskPage> =>
+  (await apiClient.get<HighRiskPage>('/customers/opportunities', { params: customerFilterParams(q) })).data;
 
 export const triggerCustomerAction = async (ref: string, action: string, note?: string): Promise<CustomerAction> => {
   const response = await apiClient.post<CustomerAction>(`/customers/${encodeURIComponent(ref)}/actions`, { action, note });
@@ -147,5 +154,26 @@ export const predictChurnBatch = async (file: File, opts: { asOf?: string; maxIt
     headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 120000,
   });
+  return response.data;
+};
+
+export interface DssRule {
+  rule_id: string;
+  level: string;
+  segments: string;
+  churn_interval: string;
+  warning: string | null;
+  recommendation: string;
+}
+
+/** Bảng luật DSS (dùng cho trợ lý gợi ý theo luật) */
+export const getDssRules = async (): Promise<DssRule[]> => {
+  const response = await apiClient.get<DssRule[]>('/dss/rules');
+  return response.data;
+};
+
+/** Đánh giá hiệu quả DSS trên tập kiểm tra out-of-time */
+export const getDssEvaluation = async (): Promise<DssEvaluation> => {
+  const response = await apiClient.get<DssEvaluation>('/dss/evaluation');
   return response.data;
 };

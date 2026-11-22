@@ -85,18 +85,17 @@ body {
 }
 
 .sidebar-brand-logo {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: #2563eb;
-  color: #ffffff;
-  font-weight: 800;
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
 }
+
+/* Logo chữ OmniDSS (components/brand/BrandMark.tsx) */
+.auth-brand-mark { border-radius: 12px; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55), 0 8px 20px rgba(15, 23, 42, 0.25); }
+.brand-lockup { display: flex; align-items: center; gap: 12px; }
+.brand-wordmark { font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; color: var(--text-main); }
+.brand-wordmark b { font-weight: 800; background: linear-gradient(135deg, #3b82f6, #4338ca); -webkit-background-clip: text; background-clip: text; color: transparent; }
+[data-theme="dark"] .brand-wordmark b, :root:not([data-theme="light"]) .brand-wordmark b { background-image: linear-gradient(135deg, #60a5fa, #818cf8); }
+.brand-tagline { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-dim); margin-top: 4px; }
 
 .sidebar-brand-text .brand-name {
   font-size: 1.1rem;

@@ -237,12 +237,12 @@ export const HomeWelcomeTab: React.FC<HomeWelcomeTabProps> = ({ setActiveTab }) 
             <div className="pillar-icon-box bg-rose">
               <MessageSquare size={24} color="#f43f5e" />
             </div>
-            <h3 className="pillar-title">6. Trợ Lý AI DSS Copilot & Live Chat</h3>
+            <h3 className="pillar-title">6. Trợ Lý Gợi Ý Theo Luật & Ghi Chú CSKH</h3>
             <p className="pillar-desc">
-              Tích hợp module cố vấn chiến lược CSKH tự động và Live Chat tương tác thời gian thực, hỗ trợ các chuyên viên phân tích và nhân viên Marketing tra cứu chỉ số khách hàng tức thời.
+              Trợ lý trả lời theo bảng luật DSS và số liệu thật của hệ thống (rủi ro rời bỏ, khách tiềm năng, phân cụm RFM, chất lượng mô hình), kèm kênh ghi chú nội bộ cho nhóm CSKH.
             </p>
             <div className="pillar-footer-tag">
-              <CheckCircle2 size={14} color="#f43f5e" /> Cố vấn chiến lược CSKH 24/7
+              <CheckCircle2 size={14} color="#f43f5e" /> Tra cứu luật & số liệu tức thì
             </div>
           </div>
         </div>

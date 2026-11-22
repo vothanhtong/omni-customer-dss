@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useModelMetrics, fmt } from '../../context/MetricsContext';
 import { RoleType } from '../../types/auth';
+import { BrandMark } from '../brand/BrandMark';
 import {
   Mail,
   Lock,
@@ -134,9 +135,9 @@ export const AuthPage: React.FC = () => {
         {/* Top Brand & Rating */}
         <div className="auth-hero-top-row hero-fade-in">
           <div className="auth-brand-badge">
-            <div className="auth-logo-icon pulse-logo">A</div>
+            <BrandMark size={44} className="pulse-logo auth-brand-mark" />
             <div className="auth-brand-info">
-              <span className="auth-brand-name">Omni DSS</span>
+              <span className="auth-brand-name">OmniDSS</span>
               <span className="auth-brand-subtag">Hệ Thống Ra Quyết Định Đa Kênh</span>
             </div>
           </div>
@@ -158,7 +159,7 @@ export const AuthPage: React.FC = () => {
           </h1>
 
           <p className="auth-hero-desc">
-            Tốc độ xử lý quyết định dưới 14ms, dữ liệu giao dịch chuẩn hóa đa kênh và động cơ học máy tự động – nâng tầm từ phân cụm RFM đơn lẻ đến không gian tác nghiệp tiếp thị cá nhân hóa toàn diện.
+            Dữ liệu giao dịch đa kênh, mô hình dự đoán rời bỏ có giải thích SHAP, phân cụm RFM và bảng luật DSS trong cùng một hệ thống — từ phân tích đến khuyến nghị hành động chăm sóc khách hàng.
           </p>
 
           {/* 3 Điểm Nhấn Tính Năng Nổi Bật (Thay thế cho phần trích dẫn cũ) */}
@@ -167,7 +168,7 @@ export const AuthPage: React.FC = () => {
               <div className="highlight-icon-box"><Zap size={16} color="#60a5fa" /></div>
               <div>
                 <div className="highlight-title">Phản Hồi Siêu Tốc</div>
-                <div className="highlight-desc">Xử lý quy tắc DSS & dự báo Churn &lt; 14ms</div>
+                <div className="highlight-desc">Dự đoán churn + SHAP ~8 ms, luật DSS ~1 ms (trung vị, đo trên máy phát triển)</div>
               </div>
             </div>
 

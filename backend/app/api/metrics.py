@@ -1,10 +1,10 @@
 # pyrefly: ignore [missing-import]
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter
 
 try:
-    from backend.app.core.ml_models import load_metrics
+    from backend.app.api.deps import artifact_or_503
 except ImportError:
-    from app.core.ml_models import load_metrics
+    from app.api.deps import artifact_or_503
 
 router = APIRouter(prefix="/api", tags=["Model Metrics"])
 
@@ -14,10 +14,4 @@ def get_model_metrics():
     """
     Chỉ số đánh giá thực tế của mô hình (sinh bởi backend/train_pipeline.py, lưu ở saved_models/model_metrics.json).
     """
-    metrics = load_metrics()
-    if metrics is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Chưa có model_metrics.json. Hãy chạy: python backend/train_pipeline.py",
-        )
-    return metrics
+    return artifact_or_503("model_metrics.json")

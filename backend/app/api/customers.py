@@ -12,12 +12,16 @@ from pydantic import BaseModel, Field
 
 try:
     from backend.app.api.deps import get_current_user
-    from backend.app.core.customer_store import ALERT_ORDER, CustomersNotReadyError, customer_store
+    from backend.app.core.customer_store import (
+        OPPORTUNITY_MIN_REPURCHASE_PCT, OPPORTUNITY_SEGMENTS, CustomersNotReadyError, customer_store,
+    )
     from backend.app.core.database import db_manager
     from backend.app.core.ml_models import load_metrics
 except ImportError:
     from app.api.deps import get_current_user
-    from app.core.customer_store import ALERT_ORDER, CustomersNotReadyError, customer_store
+    from app.core.customer_store import (
+        OPPORTUNITY_MIN_REPURCHASE_PCT, OPPORTUNITY_SEGMENTS, CustomersNotReadyError, customer_store,
+    )
     from app.core.database import db_manager
     from app.core.ml_models import load_metrics
 
@@ -42,6 +46,7 @@ class HighRiskCustomer(BaseModel):
     display_id: str
     segment: str
     churn_prob_pct: float
+    repurchase_prob_pct: float
     recency_days: float
     frequency: int
     monetary: float
@@ -60,6 +65,7 @@ class HighRiskPage(BaseModel):
     page_size: int
     items: List[HighRiskCustomer]
     alert_counts: Dict[str, int]
+    opportunity_count: int
     population: int
     facets: Dict[str, List[str]]
     data_note: str
@@ -90,17 +96,42 @@ async def list_high_risk(
 ):
     """Khách hàng đã chấm điểm, sắp theo mức cảnh báo DSS rồi xác suất churn giảm dần."""
     try:
-        res = customer_store.query(sorted(set(alert_level), key=lambda x: -ALERT_ORDER[x]),
-                                   segment, channel, region, page, page_size)
+        res = customer_store.risk(alert_level, segment=segment, channel=channel, region=region, page=page, page_size=page_size)
     except CustomersNotReadyError as e:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
 
+    return await _with_actions(res, _data_note())
+
+
+@router.get("/opportunities", response_model=HighRiskPage)
+async def list_opportunities(
+    segment: Optional[str] = None,
+    channel: Optional[str] = None,
+    region: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    _user: Dict[str, Any] = Depends(get_current_user),
+):
+    """
+    Cảnh báo KHÁCH TIỀM NĂNG (công việc 4.4): phân khúc VIP/Tiềm năng có xác suất mua lại >= 60%,
+    sắp theo xác suất mua lại giảm dần — cơ hội bán thêm / tri ân thay vì chống rời bỏ.
+    """
+    try:
+        res = customer_store.opportunities(segment=segment, channel=channel, region=region, page=page, page_size=page_size)
+    except CustomersNotReadyError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
+    note = (f"{_data_note()} Tiêu chí: phân khúc {' / '.join(OPPORTUNITY_SEGMENTS)} "
+            f"và xác suất mua lại >= {OPPORTUNITY_MIN_REPURCHASE_PCT:.0f}%.")
+    return await _with_actions(res, note)
+
+
+async def _with_actions(res: Dict[str, Any], note: str) -> Dict[str, Any]:
     refs = [it["ref"] for it in res["items"]]
     stored = await db_manager.get_customer_actions(refs)
     for it in res["items"]:
         act = stored.get(it["ref"]) or _memory_actions.get(it["ref"])
         it["last_action"] = {k: act[k] for k in CustomerAction.model_fields if k in act} if act else None
-    return {**res, "data_note": _data_note()}
+    return {**res, "data_note": note}
 
 
 @router.post("/{ref}/actions", response_model=CustomerAction, status_code=status.HTTP_201_CREATED)

@@ -15,7 +15,7 @@ CHURN_OK = {
     {"recency": 5, "frequency": 3, "monetary": 1500000},
     {"recency": 10, "frequency": 1, "monetary": 300000},
     {"recency": 60, "frequency": 1, "monetary": 300000},
-    {"recency": 10, "frequency": 1, "monetary": 0},
+    {"recency": 10, "frequency": 0, "monetary": 0},
 ])
 def test_rfm_predict_returns_known_segment(client, payload):
     r = client.post("/api/rfm/predict", json=payload)
@@ -29,12 +29,15 @@ def test_rfm_predict_returns_known_segment(client, payload):
 def test_rfm_segments_are_ordered_sensibly(client):
     seg = lambda p: client.post("/api/rfm/predict", json=p).json()["segment_name"]
     assert seg({"recency": 2, "frequency": 4, "monetary": 2000000}) == "VIP"
-    assert seg({"recency": 10, "frequency": 1, "monetary": 0}) == "Rủi ro"
+    assert seg({"recency": 10, "frequency": 0, "monetary": 0}) == "Rủi ro"
+    # Hồi quy lỗi VIP: khách chỉ có đơn hủy/hoàn (0 đơn thành công, 0đ) không được xếp VIP
+    assert seg({"recency": 3, "frequency": 0, "monetary": 0}) != "VIP"
 
 
 @pytest.mark.parametrize("payload", [
     {"recency": -1, "frequency": 1, "monetary": 0},
-    {"recency": 1, "frequency": 0, "monetary": 0},
+    {"recency": 1, "frequency": 0, "monetary": 500000},  # có doanh thu nhưng 0 đơn thành công
+    {"recency": 1, "frequency": -1, "monetary": 0},
     {"recency": 1, "frequency": 1, "monetary": -5},
     {"recency": 1, "frequency": 1},
 ])
@@ -51,6 +54,7 @@ def test_churn_predict_ok_with_top_factors(client):
     assert 0.0 <= body["churn_probability"] <= 1.0
     assert body["churn_probability_pct"] == pytest.approx(body["churn_probability"] * 100, abs=0.01)
     assert body["churn_prediction"] == int(body["churn_probability"] >= 0.5)
+    assert body["repurchase_probability"] == pytest.approx(1 - body["churn_probability"], abs=1e-4)  # xu hướng mua
     expected = "High Risk" if body["churn_probability"] >= 0.7 else "Medium Risk" if body["churn_probability"] >= 0.4 else "Low Risk"
     assert body["risk_level"] == expected
     assert body["model_name"] in {"Random Forest", "XGBoost"}
@@ -184,7 +188,10 @@ def test_analytics_overview(client):
     assert {c["name"] for c in a["channel_distribution"]} >= {"Facebook Fanpage", "Website", "TikTok Shop"}
     assert {c["name"] for c in a["region_distribution"]} >= {"Miền Bắc", "Miền Trung", "Miền Nam"}
     assert sum(c["orders"] for c in a["channel_distribution"]) == a["totals"]["orders"]
-    assert a["churn"]["weekly_trend"] and all(0 <= p["churn_rate"] <= 1 for p in a["churn"]["weekly_trend"])
+    trend = a["churn"]["weekly_trend"]
+    assert trend and all(p["churn_rate"] is None or 0 <= p["churn_rate"] <= 1 for p in trend)
+    # tuần quá ít khách -> không tính tỷ lệ (tránh tỷ lệ 100% trên 1-2 khách)
+    assert all(p["churn_rate"] is None for p in trend if p["active_customers"] < a["min_group_size_for_rates"])
     assert a["feature_importance"]
     text = r.text
     assert "KH_" not in text  # không lộ customer_id

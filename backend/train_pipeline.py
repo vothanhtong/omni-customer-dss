@@ -5,7 +5,8 @@ Pipeline huấn luyện ĐẦY ĐỦ trên dữ liệu thật (Cleaned_data/).
      tập khách hàng, nhãn `target` và phép chia train/test lấy NGUYÊN từ train_churn_oot.csv / test_churn_oot.csv.
   2. Baseline: Logistic Regression, Decision Tree (GridSearchCV 5-fold trên tập train).
   3. Nâng cao: Random Forest, XGBoost + SHAP (backend/ml/train_advanced.py) -> mô hình phục vụ API.
-  4. RFM K-Means (K=4) trên customer_rfm_features.csv, gán nhãn theo điểm tổng hợp tâm cụm.
+  4. RFM K-Means trên customer_rfm_features.csv (F = số đơn thành công; K chọn theo silhouette trong [4, 8]),
+     gán nhãn theo điểm tổng hợp tâm cụm (các cụm điểm thấp nhất gộp vào Rủi ro).
   5. Số liệu BI tổng hợp (backend/ml/analytics.py) + tập test đã chấm điểm cho Streamlit dashboard.
 
 Chạy:  python backend/train_pipeline.py
@@ -93,9 +94,13 @@ def train_baselines(data: dict) -> list:
 # ============================================================================
 # RFM K-MEANS
 # ============================================================================
+RFM_K_MIN = 4
+
+
 def train_rfm():
     rfm = fe.read_csv("customer_rfm_features.csv")
-    X = fe.rfm_feature_frame(rfm["recency_days"], rfm["total_orders"], rfm["monetary_total"])
+    # Frequency = số đơn mua THÀNH CÔNG (định nghĩa RFM chuẩn); đếm cả đơn hủy/hoàn sẽ xếp nhầm khách 0đ vào VIP
+    X = fe.rfm_feature_frame(rfm["recency_days"], rfm["completed_orders"], rfm["monetary_total"])
     scaler = StandardScaler()
     Xs = scaler.fit_transform(X)
 
@@ -107,27 +112,45 @@ def train_rfm():
         labels = KMeans(n_clusters=k, random_state=RANDOM_STATE, n_init=10).fit_predict(sample)
         silhouette.append({"k": k, "silhouette": r(silhouette_score(sample, labels))})
 
-    kmeans = KMeans(n_clusters=4, random_state=RANDOM_STATE, n_init=10).fit(Xs)
+    # Chọn K: silhouette cao nhất trong [4, 8] — K >= 4 để đủ 4 phân khúc nghiệp vụ (K=2/3 chỉ tách "đã mua hay chưa")
+    k_best = max((s for s in silhouette if s["k"] >= RFM_K_MIN), key=lambda s: s["silhouette"])["k"]
+    kmeans = KMeans(n_clusters=k_best, random_state=RANDOM_STATE, n_init=10).fit(Xs)
     segment_map = fe.rank_rfm_centroids(kmeans.cluster_centers_)
     rfm["segment"] = pd.Series(kmeans.labels_).map(segment_map).values
     centroids_raw = scaler.inverse_transform(kmeans.cluster_centers_)
 
-    profile = []
-    for cid, label in sorted(segment_map.items(), key=lambda t: fe.SEGMENT_LABELS.index(t[1])):
-        seg = rfm[rfm["segment"] == label]
+    clusters = []
+    for cid in range(k_best):
         c = kmeans.cluster_centers_[cid]
-        profile.append({
+        members = rfm[kmeans.labels_ == cid]
+        clusters.append({
             "cluster_id": cid,
-            "segment": label,
-            "customers": int(len(seg)),
-            "share": r(len(seg) / len(rfm)),
+            "segment": segment_map[cid],
+            "customers": int(len(members)),
             "composite_score": r(-c[0] + c[1] + c[2]),
-            "mean_recency_days": r(seg["recency_days"].mean(), 1),
-            "mean_frequency": r(seg["total_orders"].mean(), 2),
-            "mean_monetary_vnd": r(seg["monetary_total"].mean(), 0),
+            "repeat_share": r((members["completed_orders"] >= 2).mean()),
             "centroid_recency_days": r(centroids_raw[cid][0], 1),
             "centroid_frequency": r(np.expm1(centroids_raw[cid][1]), 2),
             "centroid_monetary_vnd": r(np.expm1(centroids_raw[cid][2]), 0),
+        })
+    clusters.sort(key=lambda d: -d["composite_score"])
+
+    profile = []  # gộp theo phân khúc nghiệp vụ (một phân khúc có thể gồm nhiều cụm)
+    for label in fe.SEGMENT_LABELS:
+        seg = rfm[rfm["segment"] == label]
+        ids = [c["cluster_id"] for c in clusters if c["segment"] == label]
+        profile.append({
+            "cluster_id": ids[0],
+            "cluster_ids": ids,
+            "segment": label,
+            "customers": int(len(seg)),
+            "share": r(len(seg) / len(rfm)),
+            "composite_score": max(c["composite_score"] for c in clusters if c["segment"] == label),
+            "mean_recency_days": r(seg["recency_days"].mean(), 1),
+            "mean_frequency": r(seg["completed_orders"].mean(), 2),
+            "repeat_share": r((seg["completed_orders"] >= 2).mean()),
+            "mean_monetary_vnd": r(seg["monetary_total"].mean(), 0),
+            "median_monetary_vnd": r(seg["monetary_total"].median(), 0),
         })
 
     joblib.dump(kmeans, os.path.join(SAVED_MODELS_DIR, "kmeans_rfm.pkl"))
@@ -136,8 +159,11 @@ def train_rfm():
     return kmeans, scaler, segment_map, {
         "n_customers": int(len(rfm)),
         "features": fe.RFM_FEATURES,
-        "k": 4,
-        "labeling_rule": "score = -Recency_z + log(Frequency)_z + log(Monetary)_z trên tâm cụm; cao nhất = VIP",
+        "k": k_best,
+        "k_selection": f"Silhouette cao nhất trong K ∈ [{RFM_K_MIN}, 8] (K >= {RFM_K_MIN} để đủ 4 phân khúc nghiệp vụ)",
+        "labeling_rule": ("Frequency = số đơn thành công; xếp hạng tâm cụm theo score = -Recency_z + log(1+F)_z + log(1+M)_z: "
+                          "hạng 1 = VIP, 2 = Tiềm năng, 3 = Cần chăm sóc, còn lại = Rủi ro"),
+        "clusters": clusters,
         "elbow": elbow,
         "silhouette": silhouette,
         "segments": profile,
@@ -167,7 +193,7 @@ def main():
     save_churn_artifacts(best_model, data["X_train"].columns)
     churn = churn_section(data, adv, baselines)
 
-    print("\n[4/5] RFM K-Means (K=4) ...")
+    print("\n[4/5] RFM K-Means (chọn K theo silhouette) ...")
     kmeans, scaler_rfm, segment_map, rfm = train_rfm()
 
     print("\n[5/5] Số liệu BI & dữ liệu dashboard ...")
@@ -181,12 +207,13 @@ def main():
     # Tập test đã chấm điểm cho Streamlit dashboard (chứa customer_id -> không commit, xem .gitignore)
     agg_te = data["agg_test"]
     seg = pd.Series(kmeans.predict(scaler_rfm.transform(
-        fe.rfm_feature_frame(agg_te["recency_days"], agg_te["total_orders"], agg_te["monetary"])))).map(segment_map).values
+        fe.rfm_feature_frame(agg_te["recency_days"], agg_te["completed_orders"], agg_te["monetary"])))).map(segment_map).values
     primary = np.array(fe.CHANNELS)[agg_te[list(fe.CHANNEL_COUNT_COLS.values())].to_numpy().argmax(axis=1)]
     pd.DataFrame({
         "customer_id": agg_te.index,
         "recency": agg_te["recency_days"].round(2).values,
-        "frequency": agg_te["total_orders"].values,
+        "frequency": agg_te["completed_orders"].values,  # = Frequency trong RFM (đơn thành công)
+        "total_orders": agg_te["total_orders"].values,
         "monetary": agg_te["monetary"].values,
         "fav_channel": primary,
         "region": agg_te["region"].values,
@@ -216,7 +243,14 @@ def main():
         print(f"  - {d['label']:<38} {d['importance']:.4f}  ({d['direction']})")
     print(f"\nPhân bố rủi ro test: {churn['test_risk_distribution']}")
     print("RFM:", ", ".join(f"{s['segment']} {s['customers']:,} ({s['share']:.1%})" for s in rfm["segments"]))
-    print("\n💾 Đã lưu churn_model.pkl, kmeans_rfm.pkl, model_metrics.json, analytics_summary.json, scored_customers.csv")
+    # Đánh giá hiệu quả DSS trên tập kiểm tra (công việc 6.2) + case study (6.3)
+    from backend.ml.evaluate_dss import run as evaluate_dss
+    ev = evaluate_dss()
+    opp, risk = ev["opportunity_alerts"]["alerted"], ev["risk_alerts"]["alerted"]
+    print(f"Đánh giá DSS: cảnh báo khách tiềm năng n={opp['customers']:,} mua lại thực tế {opp['actual_repurchase_rate']:.1%} "
+          f"(lift {opp['repurchase_lift']}); cảnh báo rủi ro n={risk['customers']:,} churn thực tế {risk['actual_churn_rate']:.1%}")
+
+    print("\n💾 Đã lưu churn_model.pkl, kmeans_rfm.pkl, model_metrics.json, analytics_summary.json, scored_customers.csv, dss_evaluation.json")
 
 
 if __name__ == "__main__":

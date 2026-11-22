@@ -14,6 +14,7 @@ import {
   FileText,
   GraduationCap
 } from 'lucide-react';
+import { BrandMark } from '../brand/BrandMark';
 
 interface SidebarProps {
   activeTab: string;
@@ -27,10 +28,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     <aside className="adminator-sidebar">
       {/* Brand Header */}
       <div className="sidebar-brand" onClick={() => setActiveTab('home')} style={{ cursor: 'pointer' }}>
-        <div className="sidebar-brand-logo">A</div>
+        <BrandMark size={38} className="sidebar-brand-logo" />
         <div className="sidebar-brand-text">
-          <div className="brand-name">Adminator</div>
-          <div className="brand-version">v3.1 · enterprise</div>
+          <div className="brand-name brand-wordmark">Omni<b>DSS</b></div>
+          <div className="brand-version">Hỗ trợ ra quyết định đa kênh</div>
         </div>
       </div>
 

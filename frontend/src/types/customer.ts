@@ -47,6 +47,8 @@ export interface ChurnFactor {
 export interface ChurnResponse {
   churn_probability: number;
   churn_probability_pct: number;
+  repurchase_probability: number;      // xu hướng mua = 1 - churn_probability
+  repurchase_probability_pct: number;
   churn_prediction: number;
   risk_level: 'High Risk' | 'Medium Risk' | 'Low Risk' | string;
   model_name: string;
@@ -98,6 +100,7 @@ export interface HighRiskCustomer {
   display_id: string;   // ID đã che, ví dụ KH_0908***444
   segment: string;
   churn_prob_pct: number;
+  repurchase_prob_pct: number;
   recency_days: number;
   frequency: number;
   monetary: number;
@@ -116,6 +119,7 @@ export interface HighRiskPage {
   page_size: number;
   items: HighRiskCustomer[];
   alert_counts: Record<AlertLevel, number>;
+  opportunity_count: number;
   population: number;
   facets: { segments: string[]; channels: string[]; regions: string[] };
   data_note: string;
@@ -140,6 +144,7 @@ export interface BatchCustomerResult {
   primary_channel: string;
   region: string;
   churn_probability_pct: number;
+  repurchase_probability_pct: number;
   risk_level: string;
   rfm_segment: string;
   alert_level: AlertLevel;

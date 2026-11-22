@@ -5,17 +5,9 @@ import { useModelMetrics, fmt, pct } from '../../context/MetricsContext';
 
 export const AdminManagementTab: React.FC = () => {
   const { allRegisteredUsers, refreshUsers } = useAuth();
-  const { metrics, error: metricsError, reload: reloadMetrics } = useModelMetrics();
+  const { metrics, error: metricsError, loading: metricsLoading, reload: reloadMetrics } = useModelMetrics();
   const churn = metrics?.churn;
   const [activeSubTab, setActiveSubTab] = useState<'models' | 'database' | 'users' | 'system'>('models');
-  const [tuningStatus, setTuningStatus] = useState<string>('IDLE');
-
-  const handleRetune = () => {
-    setTuningStatus('RUNNING');
-    setTimeout(() => {
-      setTuningStatus('COMPLETED');
-    }, 1500);
-  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -58,12 +50,14 @@ export const AdminManagementTab: React.FC = () => {
 
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
-            onClick={handleRetune}
+            onClick={reloadMetrics}
+            disabled={metricsLoading}
             className="btn-primary"
             style={{ fontSize: '0.85rem', padding: '8px 14px' }}
+            title="Tải lại chỉ số mô hình từ máy chủ (huấn luyện lại: python backend/train_pipeline.py)"
           >
-            <RefreshCw size={15} className={tuningStatus === 'RUNNING' ? 'spin' : ''} />
-            {tuningStatus === 'RUNNING' ? 'Đang Tái Huấn Luyện...' : 'Đồng Bộ & Kiểm Tra Mô Hình'}
+            <RefreshCw size={15} className={metricsLoading ? 'spin' : ''} />
+            {metricsLoading ? 'Đang tải chỉ số...' : 'Tải Lại Chỉ Số Mô Hình'}
           </button>
         </div>
       </div>

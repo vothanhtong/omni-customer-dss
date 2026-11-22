@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, AlertCircle, CheckCircle2, Info, Send, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
-import { getHighRiskCustomers, triggerCustomerAction, getApiErrorMessage } from '../../services/api';
+import { AlertTriangle, AlertCircle, CheckCircle2, Info, Send, ChevronLeft, ChevronRight, RefreshCw, TrendingUp } from 'lucide-react';
+import { getHighRiskCustomers, getOpportunityCustomers, triggerCustomerAction, getApiErrorMessage } from '../../services/api';
 import { AlertLevel, HighRiskCustomer, HighRiskPage } from '../../types/customer';
 
 const LEVELS: { id: AlertLevel; label: string; badge: string; icon: React.ReactNode }[] = [
@@ -15,7 +15,10 @@ const PAGE_SIZE = 10;
 const fmtVnd = (v: number) => `${Math.round(v).toLocaleString('vi-VN')} đ`;
 const fmtTime = (iso: string) => new Date(iso).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
 
+type Mode = 'risk' | 'opportunity';
+
 export const HighRiskAlertsTab: React.FC = () => {
+  const [mode, setMode] = useState<Mode>('risk');
   const [levels, setLevels] = useState<AlertLevel[]>(['CRITICAL', 'HIGH']);
   const [segment, setSegment] = useState('');
   const [channel, setChannel] = useState('');
@@ -31,17 +34,15 @@ export const HighRiskAlertsTab: React.FC = () => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await getHighRiskCustomers({
-        alert_level: levels, segment: segment || undefined, channel: channel || undefined,
-        region: region || undefined, page, page_size: PAGE_SIZE,
-      }));
+      const q = { segment: segment || undefined, channel: channel || undefined, region: region || undefined, page, page_size: PAGE_SIZE };
+      setData(mode === 'risk' ? await getHighRiskCustomers({ ...q, alert_level: levels }) : await getOpportunityCustomers(q));
       setError(null);
     } catch (e) {
       setError(getApiErrorMessage(e, 'Không tải được danh sách cảnh báo.'));
     } finally {
       setLoading(false);
     }
-  }, [levels, segment, channel, region, page]);
+  }, [mode, levels, segment, channel, region, page]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -76,8 +77,18 @@ export const HighRiskAlertsTab: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <AlertTriangle style={{ color: '#f43f5e' }} size={24} />
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 600 }}>Cảnh Báo Khách Hàng Rủi Ro Rời Bỏ</h3>
+              {mode === 'risk' ? <AlertTriangle style={{ color: '#f43f5e' }} size={24} /> : <TrendingUp style={{ color: '#10b981' }} size={24} />}
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 600 }}>
+                {mode === 'risk' ? 'Cảnh Báo Khách Hàng Rủi Ro Rời Bỏ' : 'Cảnh Báo Khách Hàng Tiềm Năng'}
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              {([['risk', 'Rủi ro rời bỏ'], ['opportunity', 'Khách tiềm năng']] as [Mode, string][]).map(([m, label]) => (
+                <button key={m} type="button" onClick={() => { setMode(m); setPage(1); }} aria-pressed={mode === m}
+                  className={`subtab-btn ${mode === m ? 'active' : ''}`}>
+                  {label}{data && m === 'opportunity' ? ` · ${data.opportunity_count.toLocaleString('vi-VN')}` : ''}
+                </button>
+              ))}
             </div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>
               {data?.data_note ?? 'Danh sách khách đã chấm điểm bằng mô hình churn và đánh giá qua bảng luật DSS.'}
@@ -96,7 +107,7 @@ export const HighRiskAlertsTab: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 16, alignItems: 'center' }}>
-          {LEVELS.map((l) => {
+          {mode === 'risk' && LEVELS.map((l) => {
             const on = levels.includes(l.id);
             return (
               <button key={l.id} type="button" onClick={() => toggleLevel(l.id)} aria-pressed={on}
@@ -129,11 +140,7 @@ export const HighRiskAlertsTab: React.FC = () => {
           const meta = levelMeta(c.alert_level);
           return (
             <div key={c.ref} className="glass-card" style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              <div style={{ background: 'rgba(244, 63, 94, 0.12)', border: '1px solid rgba(244, 63, 94, 0.3)', borderRadius: 12,
-                padding: '12px 16px', textAlign: 'center', minWidth: 110 }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Xác suất churn</div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f43f5e' }}>{c.churn_prob_pct.toFixed(1)}%</div>
-              </div>
+              <ProbabilityBox mode={mode} customer={c} />
 
               <div style={{ flex: 1, minWidth: 260 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -144,7 +151,7 @@ export const HighRiskAlertsTab: React.FC = () => {
                   <span className="badge badge-medium">{c.segment}</span>
                 </div>
                 <div style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginTop: 6 }}>
-                  {c.recency_days.toFixed(1)} ngày từ đơn gần nhất · {c.frequency} đơn · {fmtVnd(c.monetary)} · {c.channel} · {c.region}
+                  {c.recency_days.toFixed(1)} ngày từ đơn gần nhất · {c.frequency} đơn thành công · {fmtVnd(c.monetary)} · {c.channel} · {c.region}
                 </div>
                 {c.warnings.length > 0 && (
                   <div style={{ fontSize: '0.86rem', color: '#f59e0b', marginTop: 8 }}>⚠ {c.warnings.join(' · ')}</div>
@@ -200,6 +207,23 @@ export const HighRiskAlertsTab: React.FC = () => {
           </button>
         </div>
       )}
+    </div>
+  );
+};
+
+const PROB_STYLE: Record<Mode, { label: string; rgb: string; color: string }> = {
+  risk: { label: 'Xác suất churn', rgb: '244, 63, 94', color: '#f43f5e' },
+  opportunity: { label: 'Xác suất mua lại', rgb: '16, 185, 129', color: '#10b981' },
+};
+
+const ProbabilityBox: React.FC<{ mode: Mode; customer: HighRiskCustomer }> = ({ mode, customer }) => {
+  const st = PROB_STYLE[mode];
+  const value = mode === 'risk' ? customer.churn_prob_pct : customer.repurchase_prob_pct;
+  return (
+    <div style={{ background: `rgba(${st.rgb}, 0.12)`, border: `1px solid rgba(${st.rgb}, 0.3)`, borderRadius: 12,
+      padding: '12px 16px', textAlign: 'center', minWidth: 110 }}>
+      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{st.label}</div>
+      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: st.color }}>{value.toFixed(1)}%</div>
     </div>
   );
 };

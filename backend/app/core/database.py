@@ -4,9 +4,10 @@ Tích hợp MongoDB cho FastAPI với cơ chế tự động phát hiện Driver
 bảo mật ẩn mật khẩu khi in log và tự động Fallback linh hoạt nếu MongoDB chưa được bật.
 """
 
+import inspect
 import logging
 import re
-from typing import Optional, Dict, Any, List
+from typing import Any, Callable, Dict, List, Optional
 from backend.app.core.config import MONGODB_URL, MONGODB_DB_NAME
 
 logger = logging.getLogger("backend.database")
@@ -88,199 +89,97 @@ class MongoDBManager:
         print("🍃 Đã giải phóng kết nối MongoDB.")
 
     # --- Database Operations ---
+    # Motor (async) và PyMongo (sync) có cùng API, chỉ khác là Motor trả về awaitable.
+    # _run gom phần lặp lại: kiểm tra kết nối, await nếu cần, bắt lỗi & ghi log, trả giá trị mặc định.
+
+    @staticmethod
+    async def _resolve(value: Any) -> Any:
+        return await value if inspect.isawaitable(value) else value
+
+    async def _run(self, what: str, default: Any, op: Callable[[Any], Any]) -> Any:
+        if not self.is_connected or self.db is None:
+            return default
+        try:
+            return await self._resolve(op(self.db))
+        except Exception as e:
+            logger.error(f"Lỗi MongoDB khi {what}: {e}")
+            return default
+
+    async def _to_list(self, cursor: Any, length: Optional[int] = None) -> List[Dict[str, Any]]:
+        return await cursor.to_list(length=length) if self.driver_type == "Motor (Async)" else list(cursor)
+
+    async def _insert_one(self, collection: str, record: Dict[str, Any]) -> bool:
+        async def op(db):
+            await self._resolve(db[collection].insert_one(dict(record)))  # copy: không gắn _id vào dict của caller
+            return True
+        return await self._run(f"lưu vào '{collection}'", False, op)
 
     async def save_rfm_prediction(self, record: Dict[str, Any]) -> bool:
-        """Lưu dự đoán RFM vào MongoDB collection 'rfm_predictions'"""
-        if not self.is_connected or self.db is None:
-            return False
-        try:
-            if self.driver_type == "Motor (Async)":
-                await self.db["rfm_predictions"].insert_one(record)
-            else:
-                self.db["rfm_predictions"].insert_one(record)
-            return True
-        except Exception as e:
-            logger.error(f"Lỗi khi lưu RFM prediction vào MongoDB: {e}")
-            return False
+        return await self._insert_one("rfm_predictions", record)
 
     async def save_churn_prediction(self, record: Dict[str, Any]) -> bool:
-        """Lưu dự đoán Churn vào MongoDB collection 'churn_predictions'"""
-        if not self.is_connected or self.db is None:
-            return False
-        try:
-            if self.driver_type == "Motor (Async)":
-                await self.db["churn_predictions"].insert_one(record)
-            else:
-                self.db["churn_predictions"].insert_one(record)
-            return True
-        except Exception as e:
-            logger.error(f"Lỗi khi lưu Churn prediction vào MongoDB: {e}")
-            return False
+        return await self._insert_one("churn_predictions", record)
 
     async def save_dss_log(self, record: Dict[str, Any]) -> bool:
-        """Lưu nhật ký DSS vào MongoDB collection 'dss_logs'"""
-        if not self.is_connected or self.db is None:
-            return False
-        try:
-            if self.driver_type == "Motor (Async)":
-                await self.db["dss_logs"].insert_one(record)
-            else:
-                self.db["dss_logs"].insert_one(record)
-            return True
-        except Exception as e:
-            logger.error(f"Lỗi khi lưu DSS log vào MongoDB: {e}")
-            return False
-
-    async def save_dss_logs(self, records: List[Dict[str, Any]]) -> bool:
-        """Lưu nhiều nhật ký DSS trong MỘT lệnh insert_many (thay vì vòng lặp insert_one)."""
-        if not records or not self.is_connected or self.db is None:
-            return False
-        try:
-            if self.driver_type == "Motor (Async)":
-                await self.db["dss_logs"].insert_many(records, ordered=False)
-            else:
-                self.db["dss_logs"].insert_many(records, ordered=False)
-            return True
-        except Exception as e:
-            logger.error(f"Lỗi khi lưu batch DSS logs vào MongoDB: {e}")
-            return False
-
-    async def get_recent_dss_logs(self, limit: int = 50) -> List[Dict[str, Any]]:
-        """Lấy danh sách nhật ký DSS từ MongoDB"""
-        if not self.is_connected or self.db is None:
-            return []
-        try:
-            if self.driver_type == "Motor (Async)":
-                cursor = self.db["dss_logs"].find({}, {"_id": 0}).sort("_id", -1).limit(limit)
-                return await cursor.to_list(length=limit)
-            else:
-                cursor = self.db["dss_logs"].find({}, {"_id": 0}).sort("_id", -1).limit(limit)
-                return list(cursor)
-        except Exception as e:
-            logger.error(f"Lỗi khi lấy DSS logs từ MongoDB: {e}")
-            return []
+        return await self._insert_one("dss_logs", record)
 
     async def save_batch_job(self, record: Dict[str, Any]) -> bool:
-        """Nhật ký dự đoán hàng loạt (chỉ số liệu tổng hợp) -> collection 'batch_jobs'."""
-        if not self.is_connected or self.db is None:
-            return False
-        try:
-            if self.driver_type == "Motor (Async)":
-                await self.db["batch_jobs"].insert_one(dict(record))
-            else:
-                self.db["batch_jobs"].insert_one(dict(record))
-            return True
-        except Exception as e:
-            logger.error(f"Lỗi khi lưu batch job vào MongoDB: {e}")
-            return False
-
-    # --- Hành động chăm sóc khách hàng (cảnh báo rủi ro cao) ---
+        """Nhật ký dự đoán hàng loạt (chỉ số liệu tổng hợp)."""
+        return await self._insert_one("batch_jobs", record)
 
     async def save_customer_action(self, record: Dict[str, Any]) -> bool:
-        """Lưu hành động CSKH vào collection 'customer_actions' (chỉ lưu ref mờ, không lưu customer_id gốc)."""
-        if not self.is_connected or self.db is None:
+        """Hành động CSKH (chỉ lưu ref mờ, không lưu customer_id gốc)."""
+        return await self._insert_one("customer_actions", record)
+
+    async def save_dss_logs(self, records: List[Dict[str, Any]]) -> bool:
+        """Lưu nhiều nhật ký DSS trong MỘT lệnh insert_many."""
+        if not records:
             return False
-        try:
-            if self.driver_type == "Motor (Async)":
-                await self.db["customer_actions"].insert_one(dict(record))
-            else:
-                self.db["customer_actions"].insert_one(dict(record))
+
+        async def op(db):
+            await self._resolve(db["dss_logs"].insert_many([dict(r) for r in records], ordered=False))
             return True
-        except Exception as e:
-            logger.error(f"Lỗi khi lưu customer action vào MongoDB: {e}")
-            return False
+        return await self._run("lưu batch DSS logs", False, op)
+
+    async def get_recent_dss_logs(self, limit: int = 50) -> List[Dict[str, Any]]:
+        return await self._run("lấy DSS logs", [], lambda db: self._to_list(
+            db["dss_logs"].find({}, {"_id": 0}).sort("_id", -1).limit(limit), limit))
 
     async def get_customer_actions(self, refs: List[str]) -> Dict[str, Dict[str, Any]]:
         """Hành động MỚI NHẤT theo từng ref."""
-        if not refs or not self.is_connected or self.db is None:
-            return {}
-        try:
-            query = {"ref": {"$in": list(refs)}}
-            if self.driver_type == "Motor (Async)":
-                docs = await self.db["customer_actions"].find(query, {"_id": 0}).sort("triggered_at", 1).to_list(length=None)
-            else:
-                docs = list(self.db["customer_actions"].find(query, {"_id": 0}).sort("triggered_at", 1))
-            return {d["ref"]: d for d in docs}  # sort tăng dần -> bản ghi sau ghi đè -> mới nhất
-        except Exception as e:
-            logger.error(f"Lỗi khi lấy customer actions từ MongoDB: {e}")
+        if not refs:
             return {}
 
-    # --- User Management in MongoDB ---
+        async def op(db):
+            docs = await self._to_list(db["customer_actions"].find({"ref": {"$in": list(refs)}}, {"_id": 0}).sort("triggered_at", 1))
+            return {d["ref"]: d for d in docs}  # sort tăng dần -> bản ghi sau ghi đè -> mới nhất
+        return await self._run("lấy customer actions", {}, op)
+
+    # --- User Management ---
 
     async def create_user(self, user_data: Dict[str, Any]) -> bool:
-        """Lưu tài khoản người dùng / doanh nghiệp vào MongoDB collection 'users'"""
-        if not self.is_connected or self.db is None:
-            return False
-        try:
-            if self.driver_type == "Motor (Async)":
-                await self.db["users"].update_one(
-                    {"email": user_data["email"]},
-                    {"$set": user_data},
-                    upsert=True
-                )
-            else:
-                self.db["users"].update_one(
-                    {"email": user_data["email"]},
-                    {"$set": user_data},
-                    upsert=True
-                )
+        async def op(db):
+            await self._resolve(db["users"].update_one({"email": user_data["email"]}, {"$set": user_data}, upsert=True))
             return True
-        except Exception as e:
-            logger.error(f"Lỗi khi lưu tài khoản user vào MongoDB: {e}")
-            return False
+        return await self._run("lưu tài khoản user", False, op)
 
     async def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
-        """Tìm tài khoản theo email từ MongoDB collection 'users'"""
-        if not self.is_connected or self.db is None:
-            return None
-        try:
-            if self.driver_type == "Motor (Async)":
-                return await self.db["users"].find_one({"email": email}, {"_id": 0})
-            else:
-                return self.db["users"].find_one({"email": email}, {"_id": 0})
-        except Exception as e:
-            logger.error(f"Lỗi khi tìm tài khoản user từ MongoDB: {e}")
-            return None
+        return await self._run("tìm tài khoản user", None, lambda db: db["users"].find_one({"email": email}, {"_id": 0}))
 
     async def update_user_profile(self, email: str, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Cập nhật thông tin hồ sơ doanh nghiệp & avatar vào MongoDB collection 'users'"""
-        if not self.is_connected or self.db is None:
-            return None
-        try:
-            clean_update = {k: v for k, v in update_data.items() if v is not None}
-            clean_update["email"] = email.lower().strip()
-            if self.driver_type == "Motor (Async)":
-                await self.db["users"].update_one(
-                    {"email": email.lower().strip()},
-                    {"$set": clean_update},
-                    upsert=True
-                )
-                return await self.db["users"].find_one({"email": email.lower().strip()}, {"_id": 0})
-            else:
-                self.db["users"].update_one(
-                    {"email": email.lower().strip()},
-                    {"$set": clean_update},
-                    upsert=True
-                )
-                return self.db["users"].find_one({"email": email.lower().strip()}, {"_id": 0})
-        except Exception as e:
-            logger.error(f"Lỗi khi cập nhật hồ sơ user trong MongoDB: {e}")
-            return None
+        """Cập nhật hồ sơ doanh nghiệp & avatar."""
+        key = email.lower().strip()
+        clean_update = {k: v for k, v in update_data.items() if v is not None}
+        clean_update["email"] = key
+
+        async def op(db):
+            await self._resolve(db["users"].update_one({"email": key}, {"$set": clean_update}, upsert=True))
+            return await self._resolve(db["users"].find_one({"email": key}, {"_id": 0}))
+        return await self._run("cập nhật hồ sơ user", None, op)
 
     async def get_all_users(self) -> List[Dict[str, Any]]:
-        """Lấy danh sách tất cả tài khoản người dùng từ MongoDB"""
-        if not self.is_connected or self.db is None:
-            return []
-        try:
-            if self.driver_type == "Motor (Async)":
-                cursor = self.db["users"].find({}, {"_id": 0}).sort("_id", -1)
-                return await cursor.to_list(length=100)
-            else:
-                cursor = self.db["users"].find({}, {"_id": 0}).sort("_id", -1)
-                return list(cursor)
-        except Exception as e:
-            logger.error(f"Lỗi khi lấy danh sách users từ MongoDB: {e}")
-            return []
+        return await self._run("lấy danh sách users", [], lambda db: self._to_list(
+            db["users"].find({}, {"_id": 0}).sort("_id", -1), 100))
 
 
 db_manager = MongoDBManager()

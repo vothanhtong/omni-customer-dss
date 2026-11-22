@@ -47,10 +47,10 @@ export const BatchPredictionPanel: React.FC = () => {
 
   const downloadCsv = () => {
     if (!res) return;
-    const header = ['display_id', 'churn_probability_pct', 'alert_level', 'rfm_segment', 'recency_days', 'total_orders',
+    const header = ['display_id', 'churn_probability_pct', 'repurchase_probability_pct', 'alert_level', 'rfm_segment', 'recency_days', 'total_orders',
       'completed_orders', 'monetary', 'primary_channel', 'region', 'recommendation', 'top_factors'];
     const lines = res.items.map((it) => [
-      it.display_id, it.churn_probability_pct, it.alert_level, it.rfm_segment, it.recency_days, it.total_orders,
+      it.display_id, it.churn_probability_pct, it.repurchase_probability_pct, it.alert_level, it.rfm_segment, it.recency_days, it.total_orders,
       it.completed_orders, it.monetary, it.primary_channel, it.region, it.recommendation,
       it.top_factors.map((f) => `${f.label} (${f.shap_value > 0 ? '+' : ''}${f.shap_value.toFixed(3)})`).join('; '),
     ].map(csvEscape).join(','));
@@ -160,13 +160,14 @@ export const BatchPredictionPanel: React.FC = () => {
           <div style={{ overflowX: 'auto' }}>
             <table className="batch-table">
               <thead>
-                <tr><th>Khách</th><th>Churn</th><th>Cảnh báo</th><th>Phân khúc</th><th>Đơn (TC)</th><th>Recency</th><th>Kênh · Vùng</th><th>Lý do chính (SHAP)</th><th>Khuyến nghị DSS</th></tr>
+                <tr><th>Khách</th><th>Churn</th><th>Mua lại</th><th>Cảnh báo</th><th>Phân khúc</th><th>Đơn (TC)</th><th>Recency</th><th>Kênh · Vùng</th><th>Lý do chính (SHAP)</th><th>Khuyến nghị DSS</th></tr>
               </thead>
               <tbody>
                 {res.items.map((it, i) => (
                   <tr key={`${it.display_id}-${i}`}>
                     <td style={{ fontFamily: 'monospace' }}>{it.display_id}</td>
                     <td style={{ fontWeight: 700 }}>{it.churn_probability_pct.toFixed(1)}%</td>
+                    <td>{it.repurchase_probability_pct.toFixed(1)}%</td>
                     <td><span className={`badge ${ALERT_BADGE[it.alert_level] ?? 'badge-low'}`}>{ALERT_LABEL[it.alert_level] ?? it.alert_level}</span></td>
                     <td>{it.rfm_segment}</td>
                     <td>{it.total_orders} ({it.completed_orders})</td>

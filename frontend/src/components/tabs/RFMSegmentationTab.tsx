@@ -49,13 +49,13 @@ export const RFMSegmentationTab: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Frequency (Số lần giao dịch):</label>
+            <label className="form-label">Frequency (Số đơn mua thành công):</label>
             <input
               type="number"
               className="form-input"
               value={frequency}
               onChange={(e) => setFrequency(Number(e.target.value))}
-              min={1}
+              min={0}
               required
             />
           </div>
@@ -111,7 +111,7 @@ export const RFMSegmentationTab: React.FC = () => {
               </div>
               <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '10px', borderRadius: '8px' }}>
                 <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Frequency</div>
-                <div style={{ fontWeight: 600 }}>{result.frequency} lần</div>
+                <div style={{ fontWeight: 600 }}>{result.frequency} đơn TC</div>
               </div>
               <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '10px', borderRadius: '8px' }}>
                 <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Monetary</div>

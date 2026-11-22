@@ -110,3 +110,26 @@ export interface AnalyticsOverview {
   };
   feature_importance: { feature: string; label: string; importance: number; direction: string }[];
 }
+
+/* ---------------- /api/dss/evaluation (backend/ml/evaluate_dss.py) ---------------- */
+export interface DssGroupStats {
+  customers: number;
+  actual_churn_rate: number | null;
+  actual_repurchase_rate: number | null;
+  repurchased_customers: number;
+  repurchase_lift: number | null;
+  mean_predicted_churn: number | null;
+}
+
+export interface DssEvaluation {
+  data: { source: string; customers: number; base_actual_churn_rate: number; base_actual_repurchase_rate: number };
+  risk_alerts: { definition: string; alerted: DssGroupStats; not_alerted: DssGroupStats };
+  opportunity_alerts: { definition: string; alerted: DssGroupStats; not_alerted: DssGroupStats };
+  by_alert_level: Record<string, DssGroupStats>;
+  by_segment: Record<string, DssGroupStats>;
+  rule_coverage: ({ rule_id: string; level: string } & DssGroupStats)[];
+  repurchase_ranking: {
+    cumulative_gains: { population_share: number; captured_share: number; precision: number }[];
+    top_10pct: { population_share: number; captured_share: number; precision: number };
+  };
+}

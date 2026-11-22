@@ -129,3 +129,40 @@ export interface HighRiskQuery {
   page: number;
   page_size: number;
 }
+
+/* ---------------- /api/churn/predict-batch ---------------- */
+export interface BatchCustomerResult {
+  display_id: string;
+  recency_days: number;
+  total_orders: number;
+  completed_orders: number;
+  monetary: number;
+  primary_channel: string;
+  region: string;
+  churn_probability_pct: number;
+  risk_level: string;
+  rfm_segment: string;
+  alert_level: AlertLevel;
+  recommendation: string;
+  top_factors: ChurnFactor[];
+}
+
+export interface BatchPredictionResponse {
+  model_name: string;
+  summary: {
+    n_rows: number;
+    n_valid_rows: number;
+    n_dropped_rows: number;
+    n_orders: number;
+    n_customers: number;
+    first_order_at: string;
+    as_of: string;
+    mean_churn_probability_pct: number;
+    risk_distribution: Record<string, number>;
+    alert_distribution: Record<string, number>;
+    segment_distribution: Record<string, number>;
+    warnings: string[];
+  };
+  items: BatchCustomerResult[];
+  items_truncated: boolean;
+}

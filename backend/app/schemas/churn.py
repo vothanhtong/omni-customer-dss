@@ -86,3 +86,42 @@ class ChurnPredictionResponse(BaseModel):
     risk_level: str
     model_name: str
     top_factors: List[ChurnFactor] = []
+
+
+# ------------------------------------------------------------------ Dự đoán hàng loạt (CSV)
+class BatchCustomerResult(BaseModel):
+    display_id: str                      # customer_id đã che, không trả ID gốc
+    recency_days: float
+    total_orders: int
+    completed_orders: int
+    monetary: float
+    primary_channel: str
+    region: str
+    churn_probability_pct: float
+    risk_level: str
+    rfm_segment: str
+    alert_level: str
+    recommendation: str
+    top_factors: List[ChurnFactor] = []
+
+
+class BatchSummary(BaseModel):
+    n_rows: int
+    n_valid_rows: int
+    n_dropped_rows: int
+    n_orders: int
+    n_customers: int
+    first_order_at: str
+    as_of: str
+    mean_churn_probability_pct: float
+    risk_distribution: Dict[str, int]
+    alert_distribution: Dict[str, int]
+    segment_distribution: Dict[str, int]
+    warnings: List[str]
+
+
+class BatchPredictionResponse(BaseModel):
+    model_name: str
+    summary: BatchSummary
+    items: List[BatchCustomerResult]   # khách ưu tiên cao nhất trước, tối đa max_items
+    items_truncated: bool

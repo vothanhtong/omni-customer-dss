@@ -8,7 +8,8 @@ import {
   DSSResponse,
   CustomerAction,
   HighRiskPage,
-  HighRiskQuery
+  HighRiskQuery,
+  BatchPredictionResponse
 } from '../types/customer';
 import { AnalyticsOverview, ModelMetrics } from '../types/metrics';
 
@@ -131,5 +132,20 @@ export const getHighRiskCustomers = async (q: HighRiskQuery): Promise<HighRiskPa
 
 export const triggerCustomerAction = async (ref: string, action: string, note?: string): Promise<CustomerAction> => {
   const response = await apiClient.post<CustomerAction>(`/customers/${encodeURIComponent(ref)}/actions`, { action, note });
+  return response.data;
+};
+
+/** Dự đoán churn hàng loạt từ file CSV đơn hàng (cùng định dạng orders_cleaned.csv) */
+export const predictChurnBatch = async (file: File, opts: { asOf?: string; maxItems?: number } = {}): Promise<BatchPredictionResponse> => {
+  const form = new FormData();
+  form.append('file', file);
+  const params: Record<string, string | number> = { max_items: opts.maxItems ?? 200 };
+  if (opts.asOf) params.as_of = opts.asOf;
+  // Ghi đè Content-Type mặc định (application/json) để axios gửi multipart thay vì serialize FormData thành JSON
+  const response = await apiClient.post<BatchPredictionResponse>('/churn/predict-batch', form, {
+    params,
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120000,
+  });
   return response.data;
 };

@@ -1,18 +1,9 @@
 import React, { useState } from 'react';
+import { BatchPredictionPanel } from './BatchPredictionPanel';
 import { Sparkles, Sliders, ShieldAlert, Layout, Zap, Filter, FileSpreadsheet, CheckCircle2, ShoppingBag } from 'lucide-react';
 
 export const BusinessToolsTab: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<'cleaner' | 'marketing' | 'architecture'>('cleaner');
-  const [cleaningStatus, setCleaningStatus] = useState<string>('IDLE');
-  const [cleanedCount, setCleanedCount] = useState<number>(10000);
-
-  const handleRunCleaner = () => {
-    setCleaningStatus('RUNNING');
-    setTimeout(() => {
-      setCleaningStatus('COMPLETED');
-      setCleanedCount(10000);
-    }, 1200);
-  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -48,14 +39,14 @@ export const BusinessToolsTab: React.FC = () => {
               </span>
             </div>
             <p style={{ color: '#9ca3af', fontSize: '0.88rem', marginTop: '4px' }}>
-              Môi trường làm việc thực tế: Tiền xử lý dữ liệu giao dịch đa kênh, quản lý kịch bản Marketing cá nhân hóa và thiết lập ngưỡng cảnh báo rủi ro rời bỏ.
+              Chấm điểm rủi ro rời bỏ hàng loạt từ file đơn hàng đa kênh, kịch bản Marketing cá nhân hóa và luồng ra quyết định DSS.
             </p>
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
-            onClick={handleRunCleaner}
+            onClick={() => setActiveSubTab('cleaner')}
             className="btn-primary"
             style={{
               background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
@@ -65,7 +56,7 @@ export const BusinessToolsTab: React.FC = () => {
             }}
           >
             <Filter size={15} />
-            {cleaningStatus === 'RUNNING' ? 'Đang Lọc & Khử Nhiễu...' : 'Chạy Pipeline Tiền Xử Lý Dữ Liệu'}
+            Dự Đoán Hàng Loạt Từ CSV
           </button>
         </div>
       </div>
@@ -81,7 +72,7 @@ export const BusinessToolsTab: React.FC = () => {
           onClick={() => setActiveSubTab('cleaner')}
           className={`subtab-btn ${activeSubTab === 'cleaner' ? 'active' : ''}`}
         >
-          <Filter size={17} /> Bộ Công Cụ Tiền Xử Lý Dữ Liệu
+          <Filter size={17} /> Dự Đoán Hàng Loạt (CSV)
         </button>
         <button
           onClick={() => setActiveSubTab('marketing')}
@@ -97,48 +88,8 @@ export const BusinessToolsTab: React.FC = () => {
         </button>
       </div>
 
-      {/* SUBTAB 1: CÔNG CỤ LÀM SẠCH DỮ LIỆU TƯƠNG TÁC */}
-      {activeSubTab === 'cleaner' && (
-        <div className="glass-card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Filter style={{ color: '#10b981' }} size={22} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Quy Trình Tiền Xử Lý & Làm Sạch Dữ Liệu Đa Kênh</h3>
-            </div>
-            {cleaningStatus === 'COMPLETED' && (
-              <span style={{ color: '#10b981', fontWeight: 600, fontSize: '0.85rem' }}>
-                ✓ Đã làm sạch và chuẩn hóa thành công {cleanedCount.toLocaleString()} bản ghi giao dịch!
-              </span>
-            )}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '20px' }}>
-            <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '14px', borderRadius: '10px' }}>
-              <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>1. Xử lý Missing Values</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#10b981', marginTop: '4px' }}>100% Đầy đủ</div>
-              <div style={{ fontSize: '0.75rem', color: '#cbd5e1', marginTop: '2px' }}>Imputation giá trị trung vị</div>
-            </div>
-
-            <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '14px', borderRadius: '10px' }}>
-              <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>2. Xử lý Outlier (IQR)</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#06b6d4', marginTop: '4px' }}>Cắt lọc phân vị</div>
-              <div style={{ fontSize: '0.75rem', color: '#cbd5e1', marginTop: '2px' }}>Recency 1-365, Monetary &gt; 100k</div>
-            </div>
-
-            <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '14px', borderRadius: '10px' }}>
-              <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>3. Khử Nhiễu Giao Dịch</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#818cf8', marginTop: '4px' }}>Đồng bộ 3 Kênh</div>
-              <div style={{ fontSize: '0.75rem', color: '#cbd5e1', marginTop: '2px' }}>POS, Website, TMĐT</div>
-            </div>
-
-            <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '14px', borderRadius: '10px' }}>
-              <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>4. Chuẩn Hóa StandardScaler</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f59e0b', marginTop: '4px' }}>Z-Score (μ=0, σ=1)</div>
-              <div style={{ fontSize: '0.75rem', color: '#cbd5e1', marginTop: '2px' }}>Sẵn sàng cho ML Models</div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* SUBTAB 1: DỰ ĐOÁN CHURN HÀNG LOẠT TỪ CSV (dữ liệu thật, pipeline huấn luyện) */}
+      {activeSubTab === 'cleaner' && <BatchPredictionPanel />}
 
       {/* SUBTAB 2: CHIẾN LƯỢC MARKETING & CẢNH BÁO DSS */}
       {activeSubTab === 'marketing' && (

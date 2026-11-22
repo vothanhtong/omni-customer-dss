@@ -71,6 +71,14 @@ class ModelNotReadyError(RuntimeError):
     pass
 
 
+def risk_level_of(churn_prob: float) -> str:
+    if churn_prob >= RISK_HIGH:
+        return "High Risk"
+    if churn_prob >= RISK_MEDIUM:
+        return "Medium Risk"
+    return "Low Risk"
+
+
 def load_metrics() -> Optional[Dict[str, Any]]:
     if not os.path.exists(METRICS_PATH):
         return None
@@ -140,22 +148,42 @@ class MLModelManager:
         X = build_model_features(agg, processing_hours_fill=fill)[self.churn_features]
         churn_prob = float(self.churn_model.predict_proba(X)[0][1])
 
-        if churn_prob >= RISK_HIGH:
-            risk_level = "High Risk"
-        elif churn_prob >= RISK_MEDIUM:
-            risk_level = "Medium Risk"
-        else:
-            risk_level = "Low Risk"
-
         top_factors = explain_rows(self.churn_explainer, X, top_k=top_k)[0] if self.churn_explainer is not None else []
         return {
             "churn_probability": round(churn_prob, 4),
             "churn_probability_pct": round(churn_prob * 100.0, 2),
             "churn_prediction": int(churn_prob >= 0.5),
-            "risk_level": risk_level,
+            "risk_level": risk_level_of(churn_prob),
             "model_name": self.churn_model_name,
             "top_factors": top_factors,
         }
+
+    def score_aggregates(self, agg: pd.DataFrame, top_k: int = 3, explain_limit: Optional[int] = None) -> pd.DataFrame:
+        """
+        Chấm điểm nhiều khách cùng lúc từ số liệu thô (build_customer_aggregates) — dùng cho dự đoán hàng loạt.
+        Trả DataFrame (index = customer_id): churn_prob, risk_level, rfm_segment, top_factors.
+        SHAP chỉ tính cho `explain_limit` khách rủi ro cao nhất (None = tất cả) để giới hạn thời gian xử lý.
+        """
+        self._ensure("churn_model", "churn_features", "kmeans_model", "scaler_rfm", "segment_map")
+        fill = float(self.inference_defaults.get("processing_hours_mean", 0.0))
+        X = build_model_features(agg, processing_hours_fill=fill)[self.churn_features]
+        proba = self.churn_model.predict_proba(X)[:, 1]
+
+        rfm_X = rfm_feature_frame(agg["recency_days"], agg["total_orders"], agg["monetary"])
+        clusters = self.kmeans_model.predict(self.scaler_rfm.transform(rfm_X))
+
+        out = pd.DataFrame(index=agg.index)
+        out["churn_prob"] = proba
+        out["risk_level"] = [risk_level_of(p) for p in proba]
+        out["rfm_segment"] = [self.segment_map.get(int(c), f"Cluster {int(c)}") for c in clusters]
+        out["top_factors"] = [[] for _ in range(len(out))]
+        if self.churn_explainer is not None and len(out) and explain_limit != 0:
+            order = out["churn_prob"].to_numpy().argsort()[::-1]
+            idx = order if explain_limit is None else order[:max(explain_limit, 0)]
+            factors = explain_rows(self.churn_explainer, X.iloc[idx], top_k=top_k)
+            for pos, f in zip(idx, factors):
+                out.iat[pos, out.columns.get_loc("top_factors")] = f
+        return out
 
 
 ml_manager = MLModelManager()

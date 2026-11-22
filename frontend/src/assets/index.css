@@ -3238,3 +3238,10 @@ select.form-input option {
 .shap-factor { display: flex; justify-content: space-between; gap: 10px; padding: 8px 10px; border-radius: 6px; background: var(--bg-input); font-size: 0.86rem; border-left: 3px solid var(--text-dim); }
 .shap-factor.up { border-left-color: #e66767; }
 .shap-factor.down { border-left-color: #3987e5; }
+
+/* Bảng kết quả dự đoán hàng loạt (BatchPredictionPanel) */
+.batch-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.batch-table th { text-align: left; font-weight: 600; color: var(--text-muted); padding: 8px; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
+.batch-table td { padding: 8px; border-bottom: 1px solid var(--border-color); vertical-align: top; font-variant-numeric: tabular-nums; }
+.batch-table tbody tr:hover { background: var(--bg-card-hover); }
+.batch-table .badge { white-space: nowrap; }

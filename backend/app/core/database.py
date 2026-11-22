@@ -160,6 +160,20 @@ class MongoDBManager:
             logger.error(f"Lỗi khi lấy DSS logs từ MongoDB: {e}")
             return []
 
+    async def save_batch_job(self, record: Dict[str, Any]) -> bool:
+        """Nhật ký dự đoán hàng loạt (chỉ số liệu tổng hợp) -> collection 'batch_jobs'."""
+        if not self.is_connected or self.db is None:
+            return False
+        try:
+            if self.driver_type == "Motor (Async)":
+                await self.db["batch_jobs"].insert_one(dict(record))
+            else:
+                self.db["batch_jobs"].insert_one(dict(record))
+            return True
+        except Exception as e:
+            logger.error(f"Lỗi khi lưu batch job vào MongoDB: {e}")
+            return False
+
     # --- Hành động chăm sóc khách hàng (cảnh báo rủi ro cao) ---
 
     async def save_customer_action(self, record: Dict[str, Any]) -> bool:

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-18T11:17:21+00:00",
+  "generated_at": "2026-11-18T11:52:26+00:00",
   "data_source": "Cleaned_data/orders_cleaned.csv + train_churn_oot.csv / test_churn_oot.csv",
   "churn": {
     "target_definition": "target = 1 nếu khách KHÔNG phát sinh đơn mới trong cửa sổ kết quả (sau cutoff)",
@@ -17,590 +17,1436 @@
     "churn_rate_train": 0.962,
     "churn_rate_test": 0.9622,
     "majority_baseline_accuracy_test": 0.9622,
-    "reconstruction_check": {
-      "correlation_with_oot_columns": {
-        "recency_days": 1.0,
-        "total_orders": 0.999701,
-        "completed_orders": 0.99982,
-        "monetary_log": 0.999999,
-        "avg_order_value_log": 1.0,
-        "return_rate": 1.0,
-        "cancel_rate": 1.0,
-        "ad_order_ratio": 1.0,
-        "processing_hours_mean": 1.0,
-        "num_channels": 1.0,
-        "is_omnichannel": 1.0,
-        "tenure_days": 0.999999,
-        "channel_Facebook Fanpage (match rate)": 1.0,
-        "channel_Shopee (match rate)": 1.0,
-        "channel_TikTok Shop (match rate)": 1.0,
-        "channel_Unknown/Other (match rate)": 1.0,
-        "channel_Website (match rate)": 1.0,
-        "region_Miền Bắc (match rate)": 1.0,
-        "region_Miền Nam (match rate)": 1.0,
-        "region_Miền Trung (match rate)": 1.0
-      },
-      "label_agreement": 0.999927
+    "label_agreement_with_oot_files": 0.999927,
+    "leakage_audit": {
+      "orders_before_cutoff": 14875,
+      "orders_updated_after_cutoff": 3863,
+      "share_updated_after_cutoff": 0.2597,
+      "policy": "Trạng thái/thời gian xử lý của các đơn này được coi là CHƯA BIẾT tại cutoff"
     },
     "features": [
       "recency_days",
       "total_orders",
-      "completed_orders",
       "monetary_log",
       "avg_order_value_log",
+      "customer_age_days",
+      "tenure_days",
+      "mean_interpurchase_days",
+      "is_repeat_customer",
+      "orders_last_7d",
+      "orders_last_30d",
+      "completed_orders",
+      "completed_rate",
       "return_rate",
       "cancel_rate",
-      "ad_order_ratio",
+      "pending_rate",
       "processing_hours_mean",
+      "processing_hours_known",
+      "ad_order_ratio",
+      "cod_ratio",
+      "num_categories",
       "num_channels",
       "is_omnichannel",
-      "tenure_days",
-      "channel_Facebook Fanpage",
-      "channel_Shopee",
-      "channel_TikTok Shop",
-      "channel_Unknown/Other",
-      "channel_Website",
-      "region_Miền Bắc",
-      "region_Miền Nam",
-      "region_Miền Trung"
+      "channel_entropy",
+      "primary_channel_share",
+      "num_sources",
+      "primary_channel__Facebook Fanpage",
+      "primary_channel__Shopee",
+      "primary_channel__TikTok Shop",
+      "primary_channel__Unknown/Other",
+      "primary_channel__Website",
+      "region__Miền Bắc",
+      "region__Miền Nam",
+      "region__Miền Trung"
     ],
-    "selection_criterion": "CV ROC-AUC (5-fold, chỉ tập train)",
+    "feature_labels": {
+      "recency_days": "Số ngày từ đơn gần nhất (Recency)",
+      "total_orders": "Tổng số đơn (Frequency)",
+      "monetary_log": "Giá trị đơn thành công (Monetary)",
+      "avg_order_value_log": "Giá trị đơn trung bình",
+      "customer_age_days": "Số ngày từ đơn đầu tiên",
+      "tenure_days": "Khoảng cách đơn đầu – đơn cuối",
+      "mean_interpurchase_days": "Chu kỳ mua lại trung bình",
+      "is_repeat_customer": "Khách đã mua lại",
+      "orders_last_7d": "Số đơn 7 ngày gần nhất",
+      "orders_last_30d": "Số đơn 30 ngày gần nhất",
+      "completed_orders": "Số đơn giao thành công",
+      "completed_rate": "Tỷ lệ đơn thành công",
+      "return_rate": "Tỷ lệ đơn hoàn trả",
+      "cancel_rate": "Tỷ lệ đơn bị hủy",
+      "pending_rate": "Tỷ lệ đơn đang xử lý",
+      "processing_hours_mean": "Thời gian xử lý đơn TB (giờ)",
+      "processing_hours_known": "Đã có đơn xử lý xong",
+      "ad_order_ratio": "Tỷ lệ đơn từ quảng cáo",
+      "cod_ratio": "Tỷ lệ đơn thanh toán COD",
+      "num_categories": "Số ngành hàng đã mua",
+      "num_channels": "Số kênh đã mua",
+      "is_omnichannel": "Mua đa kênh",
+      "channel_entropy": "Độ đa dạng kênh (entropy)",
+      "primary_channel_share": "Tỷ trọng kênh chính",
+      "num_sources": "Số fanpage/cửa hàng đã mua",
+      "primary_channel__Facebook Fanpage": "Kênh chính: Facebook Fanpage",
+      "primary_channel__Shopee": "Kênh chính: Shopee",
+      "primary_channel__TikTok Shop": "Kênh chính: TikTok Shop",
+      "primary_channel__Unknown/Other": "Kênh chính: Unknown/Other",
+      "primary_channel__Website": "Kênh chính: Website",
+      "region__Miền Bắc": "Vùng: Miền Bắc",
+      "region__Miền Nam": "Vùng: Miền Nam",
+      "region__Miền Trung": "Vùng: Miền Trung"
+    },
+    "selection_criterion": "CV ROC-AUC (5-fold, chỉ tập train) trong nhóm mô hình nâng cao RF/XGBoost",
     "decision_threshold": 0.5,
-    "best_model": "Logistic Regression",
+    "best_model": "XGBoost",
+    "best_model_params": {
+      "learning_rate": 0.03,
+      "max_depth": 2,
+      "min_child_weight": 1,
+      "n_estimators": 200
+    },
     "best_model_test": {
-      "accuracy": 0.605,
-      "balanced_accuracy": 0.6175,
-      "precision": 0.9766,
-      "recall": 0.604,
-      "f1_score": 0.7463,
-      "roc_auc": 0.6362,
-      "retained_precision": 0.0589,
-      "retained_recall": 0.6311,
-      "retained_f1": 0.1078,
-      "retained_pr_auc": 0.0838,
+      "accuracy": 0.6685,
+      "balanced_accuracy": 0.5759,
+      "precision": 0.9704,
+      "recall": 0.6761,
+      "f1_score": 0.7969,
+      "roc_auc": 0.6103,
+      "retained_precision": 0.0546,
+      "retained_recall": 0.4757,
+      "retained_f1": 0.0979,
+      "retained_pr_auc": 0.0689,
       "confusion_matrix": {
-        "tn": 65,
-        "fp": 38,
-        "fn": 1038,
-        "tp": 1583
+        "tn": 49,
+        "fp": 54,
+        "fn": 849,
+        "tp": 1772
       }
     },
     "best_model_feature_importance": [
       {
-        "feature": "channel_TikTok Shop",
-        "importance": 0.24
+        "feature": "pending_rate",
+        "label": "Tỷ lệ đơn đang xử lý",
+        "importance": 0.2354,
+        "direction": "giảm rủi ro"
       },
       {
         "feature": "recency_days",
-        "importance": 0.1458
+        "label": "Số ngày từ đơn gần nhất (Recency)",
+        "importance": 0.2043,
+        "direction": "tăng rủi ro"
       },
       {
-        "feature": "return_rate",
-        "importance": 0.0848
-      },
-      {
-        "feature": "total_orders",
-        "importance": 0.0795
+        "feature": "region__Miền Bắc",
+        "label": "Vùng: Miền Bắc",
+        "importance": 0.1265,
+        "direction": "tăng rủi ro"
       },
       {
         "feature": "processing_hours_mean",
-        "importance": 0.0752
-      },
-      {
-        "feature": "channel_Unknown/Other",
-        "importance": 0.0573
-      },
-      {
-        "feature": "channel_Shopee",
-        "importance": 0.0557
-      },
-      {
-        "feature": "region_Miền Bắc",
-        "importance": 0.0515
-      },
-      {
-        "feature": "completed_orders",
-        "importance": 0.0514
-      },
-      {
-        "feature": "channel_Facebook Fanpage",
-        "importance": 0.0478
-      },
-      {
-        "feature": "region_Miền Nam",
-        "importance": 0.027
-      },
-      {
-        "feature": "tenure_days",
-        "importance": 0.0238
-      },
-      {
-        "feature": "channel_Website",
-        "importance": 0.023
-      },
-      {
-        "feature": "region_Miền Trung",
-        "importance": 0.0147
+        "label": "Thời gian xử lý đơn TB (giờ)",
+        "importance": 0.0994,
+        "direction": "tăng rủi ro"
       },
       {
         "feature": "avg_order_value_log",
-        "importance": 0.0104
+        "label": "Giá trị đơn trung bình",
+        "importance": 0.0601,
+        "direction": "tăng rủi ro"
       },
       {
         "feature": "monetary_log",
-        "importance": 0.004
+        "label": "Giá trị đơn thành công (Monetary)",
+        "importance": 0.0447,
+        "direction": "tăng rủi ro"
       },
       {
-        "feature": "num_channels",
-        "importance": 0.0026
+        "feature": "tenure_days",
+        "label": "Khoảng cách đơn đầu – đơn cuối",
+        "importance": 0.0428,
+        "direction": "giảm rủi ro"
       },
       {
-        "feature": "is_omnichannel",
-        "importance": 0.0026
+        "feature": "completed_rate",
+        "label": "Tỷ lệ đơn thành công",
+        "importance": 0.0273,
+        "direction": "tăng rủi ro"
       },
       {
-        "feature": "ad_order_ratio",
-        "importance": 0.0018
+        "feature": "primary_channel__Unknown/Other",
+        "label": "Kênh chính: Unknown/Other",
+        "importance": 0.0266,
+        "direction": "giảm rủi ro"
+      },
+      {
+        "feature": "customer_age_days",
+        "label": "Số ngày từ đơn đầu tiên",
+        "importance": 0.0237,
+        "direction": "tăng rủi ro"
+      },
+      {
+        "feature": "region__Miền Nam",
+        "label": "Vùng: Miền Nam",
+        "importance": 0.0231,
+        "direction": "giảm rủi ro"
+      },
+      {
+        "feature": "mean_interpurchase_days",
+        "label": "Chu kỳ mua lại trung bình",
+        "importance": 0.0225,
+        "direction": "giảm rủi ro"
+      },
+      {
+        "feature": "orders_last_7d",
+        "label": "Số đơn 7 ngày gần nhất",
+        "importance": 0.016,
+        "direction": "giảm rủi ro"
+      },
+      {
+        "feature": "primary_channel__TikTok Shop",
+        "label": "Kênh chính: TikTok Shop",
+        "importance": 0.0141,
+        "direction": "tăng rủi ro"
+      },
+      {
+        "feature": "return_rate",
+        "label": "Tỷ lệ đơn hoàn trả",
+        "importance": 0.0113,
+        "direction": "tăng rủi ro"
+      },
+      {
+        "feature": "processing_hours_known",
+        "label": "Đã có đơn xử lý xong",
+        "importance": 0.0093,
+        "direction": "tăng rủi ro"
       },
       {
         "feature": "cancel_rate",
-        "importance": 0.0009
+        "label": "Tỷ lệ đơn bị hủy",
+        "importance": 0.0035,
+        "direction": "giảm rủi ro"
+      },
+      {
+        "feature": "primary_channel__Facebook Fanpage",
+        "label": "Kênh chính: Facebook Fanpage",
+        "importance": 0.0023,
+        "direction": "giảm rủi ro"
+      },
+      {
+        "feature": "ad_order_ratio",
+        "label": "Tỷ lệ đơn từ quảng cáo",
+        "importance": 0.0021,
+        "direction": "tăng rủi ro"
+      },
+      {
+        "feature": "orders_last_30d",
+        "label": "Số đơn 30 ngày gần nhất",
+        "importance": 0.0019,
+        "direction": "giảm rủi ro"
+      },
+      {
+        "feature": "num_categories",
+        "label": "Số ngành hàng đã mua",
+        "importance": 0.0017,
+        "direction": "giảm rủi ro"
+      },
+      {
+        "feature": "region__Miền Trung",
+        "label": "Vùng: Miền Trung",
+        "importance": 0.0011,
+        "direction": "giảm rủi ro"
+      },
+      {
+        "feature": "num_sources",
+        "label": "Số fanpage/cửa hàng đã mua",
+        "importance": 0.0002,
+        "direction": "tăng rủi ro"
+      },
+      {
+        "feature": "primary_channel__Website",
+        "label": "Kênh chính: Website",
+        "importance": 0.0002,
+        "direction": "tăng rủi ro"
+      },
+      {
+        "feature": "total_orders",
+        "label": "Tổng số đơn (Frequency)",
+        "importance": 0.0,
+        "direction": "không đơn điệu"
+      },
+      {
+        "feature": "is_repeat_customer",
+        "label": "Khách đã mua lại",
+        "importance": 0.0,
+        "direction": "không đơn điệu"
+      },
+      {
+        "feature": "completed_orders",
+        "label": "Số đơn giao thành công",
+        "importance": 0.0,
+        "direction": "không đơn điệu"
+      },
+      {
+        "feature": "cod_ratio",
+        "label": "Tỷ lệ đơn thanh toán COD",
+        "importance": 0.0,
+        "direction": "không đơn điệu"
+      },
+      {
+        "feature": "num_channels",
+        "label": "Số kênh đã mua",
+        "importance": 0.0,
+        "direction": "không đơn điệu"
+      },
+      {
+        "feature": "is_omnichannel",
+        "label": "Mua đa kênh",
+        "importance": 0.0,
+        "direction": "không đơn điệu"
+      },
+      {
+        "feature": "channel_entropy",
+        "label": "Độ đa dạng kênh (entropy)",
+        "importance": 0.0,
+        "direction": "không đơn điệu"
+      },
+      {
+        "feature": "primary_channel_share",
+        "label": "Tỷ trọng kênh chính",
+        "importance": 0.0,
+        "direction": "không đơn điệu"
+      },
+      {
+        "feature": "primary_channel__Shopee",
+        "label": "Kênh chính: Shopee",
+        "importance": 0.0,
+        "direction": "không đơn điệu"
       }
     ],
+    "importance_method": "SHAP (mean |value|, TreeExplainer)",
+    "best_overall_by_cv": "XGBoost",
     "risk_thresholds": {
       "high": 0.7,
       "medium": 0.4
     },
     "test_risk_distribution": {
-      "High": 321,
-      "Medium": 1844,
-      "Low": 559
+      "High": 282,
+      "Medium": 1801,
+      "Low": 641
     },
     "models": [
       {
         "model": "Logistic Regression",
+        "family": "baseline",
         "best_params": {
-          "C": 10.0
+          "C": 0.01
         },
-        "cv_roc_auc_mean": 0.6576,
-        "cv_roc_auc_std": 0.0206,
+        "n_candidates": 4,
+        "cv_roc_auc_mean": 0.6594,
+        "cv_roc_auc_std": 0.0247,
         "test": {
-          "accuracy": 0.605,
-          "balanced_accuracy": 0.6175,
-          "precision": 0.9766,
-          "recall": 0.604,
-          "f1_score": 0.7463,
-          "roc_auc": 0.6362,
-          "retained_precision": 0.0589,
-          "retained_recall": 0.6311,
-          "retained_f1": 0.1078,
-          "retained_pr_auc": 0.0838,
+          "accuracy": 0.6861,
+          "balanced_accuracy": 0.5571,
+          "precision": 0.9682,
+          "recall": 0.6967,
+          "f1_score": 0.8103,
+          "roc_auc": 0.618,
+          "retained_precision": 0.0513,
+          "retained_recall": 0.4175,
+          "retained_f1": 0.0914,
+          "retained_pr_auc": 0.0849,
           "confusion_matrix": {
-            "tn": 65,
-            "fp": 38,
-            "fn": 1038,
-            "tp": 1583
+            "tn": 43,
+            "fp": 60,
+            "fn": 795,
+            "tp": 1826
           }
         },
         "feature_importance": [
           {
-            "feature": "channel_TikTok Shop",
-            "importance": 0.24
+            "feature": "primary_channel__TikTok Shop",
+            "label": "Kênh chính: TikTok Shop",
+            "importance": 0.1348
           },
           {
-            "feature": "recency_days",
-            "importance": 0.1458
+            "feature": "processing_hours_known",
+            "label": "Đã có đơn xử lý xong",
+            "importance": 0.1196
           },
           {
-            "feature": "return_rate",
-            "importance": 0.0848
+            "feature": "orders_last_30d",
+            "label": "Số đơn 30 ngày gần nhất",
+            "importance": 0.0861
           },
           {
-            "feature": "total_orders",
-            "importance": 0.0795
+            "feature": "region__Miền Bắc",
+            "label": "Vùng: Miền Bắc",
+            "importance": 0.0759
           },
           {
-            "feature": "processing_hours_mean",
-            "importance": 0.0752
+            "feature": "primary_channel_share",
+            "label": "Tỷ trọng kênh chính",
+            "importance": 0.0603
           },
           {
-            "feature": "channel_Unknown/Other",
-            "importance": 0.0573
+            "feature": "primary_channel__Unknown/Other",
+            "label": "Kênh chính: Unknown/Other",
+            "importance": 0.0562
           },
           {
-            "feature": "channel_Shopee",
-            "importance": 0.0557
+            "feature": "orders_last_7d",
+            "label": "Số đơn 7 ngày gần nhất",
+            "importance": 0.0498
           },
           {
-            "feature": "region_Miền Bắc",
-            "importance": 0.0515
+            "feature": "region__Miền Nam",
+            "label": "Vùng: Miền Nam",
+            "importance": 0.041
           },
           {
-            "feature": "completed_orders",
-            "importance": 0.0514
+            "feature": "num_sources",
+            "label": "Số fanpage/cửa hàng đã mua",
+            "importance": 0.0338
           },
           {
-            "feature": "channel_Facebook Fanpage",
-            "importance": 0.0478
-          },
-          {
-            "feature": "region_Miền Nam",
-            "importance": 0.027
-          },
-          {
-            "feature": "tenure_days",
-            "importance": 0.0238
-          },
-          {
-            "feature": "channel_Website",
-            "importance": 0.023
-          },
-          {
-            "feature": "region_Miền Trung",
-            "importance": 0.0147
-          },
-          {
-            "feature": "avg_order_value_log",
-            "importance": 0.0104
-          },
-          {
-            "feature": "monetary_log",
-            "importance": 0.004
-          },
-          {
-            "feature": "num_channels",
-            "importance": 0.0026
-          },
-          {
-            "feature": "is_omnichannel",
-            "importance": 0.0026
-          },
-          {
-            "feature": "ad_order_ratio",
-            "importance": 0.0018
+            "feature": "primary_channel__Shopee",
+            "label": "Kênh chính: Shopee",
+            "importance": 0.0292
           },
           {
             "feature": "cancel_rate",
-            "importance": 0.0009
+            "label": "Tỷ lệ đơn bị hủy",
+            "importance": 0.0278
+          },
+          {
+            "feature": "pending_rate",
+            "label": "Tỷ lệ đơn đang xử lý",
+            "importance": 0.0224
+          },
+          {
+            "feature": "return_rate",
+            "label": "Tỷ lệ đơn hoàn trả",
+            "importance": 0.0219
+          },
+          {
+            "feature": "primary_channel__Facebook Fanpage",
+            "label": "Kênh chính: Facebook Fanpage",
+            "importance": 0.021
+          },
+          {
+            "feature": "is_omnichannel",
+            "label": "Mua đa kênh",
+            "importance": 0.0202
+          },
+          {
+            "feature": "num_channels",
+            "label": "Số kênh đã mua",
+            "importance": 0.0202
+          },
+          {
+            "feature": "region__Miền Trung",
+            "label": "Vùng: Miền Trung",
+            "importance": 0.0201
+          },
+          {
+            "feature": "is_repeat_customer",
+            "label": "Khách đã mua lại",
+            "importance": 0.0186
+          },
+          {
+            "feature": "monetary_log",
+            "label": "Giá trị đơn thành công (Monetary)",
+            "importance": 0.0177
+          },
+          {
+            "feature": "avg_order_value_log",
+            "label": "Giá trị đơn trung bình",
+            "importance": 0.017
+          },
+          {
+            "feature": "completed_rate",
+            "label": "Tỷ lệ đơn thành công",
+            "importance": 0.016
+          },
+          {
+            "feature": "num_categories",
+            "label": "Số ngành hàng đã mua",
+            "importance": 0.015
+          },
+          {
+            "feature": "completed_orders",
+            "label": "Số đơn giao thành công",
+            "importance": 0.0138
+          },
+          {
+            "feature": "customer_age_days",
+            "label": "Số ngày từ đơn đầu tiên",
+            "importance": 0.0122
+          },
+          {
+            "feature": "recency_days",
+            "label": "Số ngày từ đơn gần nhất (Recency)",
+            "importance": 0.0115
+          },
+          {
+            "feature": "processing_hours_mean",
+            "label": "Thời gian xử lý đơn TB (giờ)",
+            "importance": 0.0107
+          },
+          {
+            "feature": "total_orders",
+            "label": "Tổng số đơn (Frequency)",
+            "importance": 0.0106
+          },
+          {
+            "feature": "cod_ratio",
+            "label": "Tỷ lệ đơn thanh toán COD",
+            "importance": 0.0073
+          },
+          {
+            "feature": "mean_interpurchase_days",
+            "label": "Chu kỳ mua lại trung bình",
+            "importance": 0.0039
+          },
+          {
+            "feature": "tenure_days",
+            "label": "Khoảng cách đơn đầu – đơn cuối",
+            "importance": 0.0023
+          },
+          {
+            "feature": "ad_order_ratio",
+            "label": "Tỷ lệ đơn từ quảng cáo",
+            "importance": 0.0013
+          },
+          {
+            "feature": "primary_channel__Website",
+            "label": "Kênh chính: Website",
+            "importance": 0.0013
+          },
+          {
+            "feature": "channel_entropy",
+            "label": "Độ đa dạng kênh (entropy)",
+            "importance": 0.0004
           }
         ],
-        "train_seconds": 2.5
+        "importance_method": "|coef| trên đặc trưng chuẩn hóa",
+        "class_balancing": "class_weight = balanced",
+        "train_seconds": 2.2
       },
       {
         "model": "Decision Tree",
+        "family": "baseline",
         "best_params": {
           "max_depth": 3,
-          "min_samples_leaf": 1
+          "min_samples_leaf": 50
         },
-        "cv_roc_auc_mean": 0.6199,
-        "cv_roc_auc_std": 0.0161,
+        "n_candidates": 12,
+        "cv_roc_auc_mean": 0.6295,
+        "cv_roc_auc_std": 0.0241,
         "test": {
-          "accuracy": 0.6949,
-          "balanced_accuracy": 0.599,
-          "precision": 0.9725,
-          "recall": 0.7028,
-          "f1_score": 0.8159,
-          "roc_auc": 0.6,
-          "retained_precision": 0.0614,
-          "retained_recall": 0.4951,
-          "retained_f1": 0.1093,
-          "retained_pr_auc": 0.0582,
+          "accuracy": 0.6938,
+          "balanced_accuracy": 0.5937,
+          "precision": 0.972,
+          "recall": 0.702,
+          "f1_score": 0.8152,
+          "roc_auc": 0.6025,
+          "retained_precision": 0.0602,
+          "retained_recall": 0.4854,
+          "retained_f1": 0.1071,
+          "retained_pr_auc": 0.0497,
           "confusion_matrix": {
-            "tn": 51,
-            "fp": 52,
-            "fn": 779,
-            "tp": 1842
+            "tn": 50,
+            "fp": 53,
+            "fn": 781,
+            "tp": 1840
           }
         },
         "feature_importance": [
           {
             "feature": "recency_days",
-            "importance": 0.5638
+            "label": "Số ngày từ đơn gần nhất (Recency)",
+            "importance": 0.5657
+          },
+          {
+            "feature": "pending_rate",
+            "label": "Tỷ lệ đơn đang xử lý",
+            "importance": 0.1723
           },
           {
             "feature": "monetary_log",
-            "importance": 0.2173
+            "label": "Giá trị đơn thành công (Monetary)",
+            "importance": 0.1101
           },
           {
-            "feature": "region_Miền Bắc",
-            "importance": 0.0973
+            "feature": "region__Miền Bắc",
+            "label": "Vùng: Miền Bắc",
+            "importance": 0.0925
           },
           {
-            "feature": "processing_hours_mean",
-            "importance": 0.0853
-          },
-          {
-            "feature": "region_Miền Nam",
-            "importance": 0.0364
+            "feature": "primary_channel__TikTok Shop",
+            "label": "Kênh chính: TikTok Shop",
+            "importance": 0.0594
           },
           {
             "feature": "total_orders",
-            "importance": 0.0
-          },
-          {
-            "feature": "completed_orders",
+            "label": "Tổng số đơn (Frequency)",
             "importance": 0.0
           },
           {
             "feature": "avg_order_value_log",
+            "label": "Giá trị đơn trung bình",
             "importance": 0.0
           },
           {
-            "feature": "return_rate",
-            "importance": 0.0
-          },
-          {
-            "feature": "cancel_rate",
-            "importance": 0.0
-          },
-          {
-            "feature": "ad_order_ratio",
-            "importance": 0.0
-          },
-          {
-            "feature": "num_channels",
-            "importance": 0.0
-          },
-          {
-            "feature": "is_omnichannel",
+            "feature": "customer_age_days",
+            "label": "Số ngày từ đơn đầu tiên",
             "importance": 0.0
           },
           {
             "feature": "tenure_days",
+            "label": "Khoảng cách đơn đầu – đơn cuối",
             "importance": 0.0
           },
           {
-            "feature": "channel_Facebook Fanpage",
+            "feature": "mean_interpurchase_days",
+            "label": "Chu kỳ mua lại trung bình",
             "importance": 0.0
           },
           {
-            "feature": "channel_Shopee",
+            "feature": "is_repeat_customer",
+            "label": "Khách đã mua lại",
             "importance": 0.0
           },
           {
-            "feature": "channel_TikTok Shop",
+            "feature": "orders_last_7d",
+            "label": "Số đơn 7 ngày gần nhất",
             "importance": 0.0
           },
           {
-            "feature": "channel_Unknown/Other",
+            "feature": "orders_last_30d",
+            "label": "Số đơn 30 ngày gần nhất",
             "importance": 0.0
           },
           {
-            "feature": "channel_Website",
+            "feature": "completed_orders",
+            "label": "Số đơn giao thành công",
             "importance": 0.0
           },
           {
-            "feature": "region_Miền Trung",
+            "feature": "completed_rate",
+            "label": "Tỷ lệ đơn thành công",
+            "importance": 0.0
+          },
+          {
+            "feature": "return_rate",
+            "label": "Tỷ lệ đơn hoàn trả",
+            "importance": 0.0
+          },
+          {
+            "feature": "cancel_rate",
+            "label": "Tỷ lệ đơn bị hủy",
+            "importance": 0.0
+          },
+          {
+            "feature": "processing_hours_mean",
+            "label": "Thời gian xử lý đơn TB (giờ)",
+            "importance": 0.0
+          },
+          {
+            "feature": "processing_hours_known",
+            "label": "Đã có đơn xử lý xong",
+            "importance": 0.0
+          },
+          {
+            "feature": "ad_order_ratio",
+            "label": "Tỷ lệ đơn từ quảng cáo",
+            "importance": 0.0
+          },
+          {
+            "feature": "cod_ratio",
+            "label": "Tỷ lệ đơn thanh toán COD",
+            "importance": 0.0
+          },
+          {
+            "feature": "num_categories",
+            "label": "Số ngành hàng đã mua",
+            "importance": 0.0
+          },
+          {
+            "feature": "num_channels",
+            "label": "Số kênh đã mua",
+            "importance": 0.0
+          },
+          {
+            "feature": "is_omnichannel",
+            "label": "Mua đa kênh",
+            "importance": 0.0
+          },
+          {
+            "feature": "channel_entropy",
+            "label": "Độ đa dạng kênh (entropy)",
+            "importance": 0.0
+          },
+          {
+            "feature": "primary_channel_share",
+            "label": "Tỷ trọng kênh chính",
+            "importance": 0.0
+          },
+          {
+            "feature": "num_sources",
+            "label": "Số fanpage/cửa hàng đã mua",
+            "importance": 0.0
+          },
+          {
+            "feature": "primary_channel__Facebook Fanpage",
+            "label": "Kênh chính: Facebook Fanpage",
+            "importance": 0.0
+          },
+          {
+            "feature": "primary_channel__Shopee",
+            "label": "Kênh chính: Shopee",
+            "importance": 0.0
+          },
+          {
+            "feature": "primary_channel__Unknown/Other",
+            "label": "Kênh chính: Unknown/Other",
+            "importance": 0.0
+          },
+          {
+            "feature": "primary_channel__Website",
+            "label": "Kênh chính: Website",
+            "importance": 0.0
+          },
+          {
+            "feature": "region__Miền Nam",
+            "label": "Vùng: Miền Nam",
+            "importance": 0.0
+          },
+          {
+            "feature": "region__Miền Trung",
+            "label": "Vùng: Miền Trung",
             "importance": 0.0
           }
         ],
+        "importance_method": "Gini importance",
+        "class_balancing": "class_weight = balanced",
         "train_seconds": 0.5
       },
       {
         "model": "Random Forest",
+        "family": "advanced",
         "best_params": {
-          "max_depth": null,
-          "min_samples_leaf": 20
+          "max_depth": 6,
+          "max_features": "sqrt",
+          "min_samples_leaf": 50
         },
-        "cv_roc_auc_mean": 0.6413,
-        "cv_roc_auc_std": 0.027,
+        "n_candidates": 18,
+        "cv_roc_auc_mean": 0.6555,
+        "cv_roc_auc_std": 0.0267,
         "test": {
-          "accuracy": 0.7221,
-          "balanced_accuracy": 0.5991,
-          "precision": 0.9721,
-          "recall": 0.7322,
-          "f1_score": 0.8353,
-          "roc_auc": 0.6229,
-          "retained_precision": 0.064,
-          "retained_recall": 0.466,
-          "retained_f1": 0.1125,
-          "retained_pr_auc": 0.0671,
+          "accuracy": 0.6579,
+          "balanced_accuracy": 0.5937,
+          "precision": 0.9726,
+          "recall": 0.6631,
+          "f1_score": 0.7886,
+          "roc_auc": 0.6118,
+          "retained_precision": 0.0576,
+          "retained_recall": 0.5243,
+          "retained_f1": 0.1038,
+          "retained_pr_auc": 0.0569,
           "confusion_matrix": {
-            "tn": 48,
-            "fp": 55,
-            "fn": 702,
-            "tp": 1919
+            "tn": 54,
+            "fp": 49,
+            "fn": 883,
+            "tp": 1738
           }
         },
         "feature_importance": [
           {
             "feature": "recency_days",
-            "importance": 0.3579
+            "label": "Số ngày từ đơn gần nhất (Recency)",
+            "importance": 0.1377,
+            "direction": "tăng rủi ro"
+          },
+          {
+            "feature": "pending_rate",
+            "label": "Tỷ lệ đơn đang xử lý",
+            "importance": 0.1083,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "processing_hours_known",
+            "label": "Đã có đơn xử lý xong",
+            "importance": 0.0865,
+            "direction": "tăng rủi ro"
+          },
+          {
+            "feature": "customer_age_days",
+            "label": "Số ngày từ đơn đầu tiên",
+            "importance": 0.0858,
+            "direction": "tăng rủi ro"
           },
           {
             "feature": "processing_hours_mean",
-            "importance": 0.2026
+            "label": "Thời gian xử lý đơn TB (giờ)",
+            "importance": 0.0788,
+            "direction": "tăng rủi ro"
+          },
+          {
+            "feature": "orders_last_7d",
+            "label": "Số đơn 7 ngày gần nhất",
+            "importance": 0.0687,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "region__Miền Bắc",
+            "label": "Vùng: Miền Bắc",
+            "importance": 0.0593,
+            "direction": "tăng rủi ro"
           },
           {
             "feature": "monetary_log",
-            "importance": 0.13
+            "label": "Giá trị đơn thành công (Monetary)",
+            "importance": 0.0573,
+            "direction": "tăng rủi ro"
+          },
+          {
+            "feature": "completed_rate",
+            "label": "Tỷ lệ đơn thành công",
+            "importance": 0.0546,
+            "direction": "tăng rủi ro"
           },
           {
             "feature": "avg_order_value_log",
-            "importance": 0.1117
+            "label": "Giá trị đơn trung bình",
+            "importance": 0.0529,
+            "direction": "tăng rủi ro"
           },
           {
-            "feature": "region_Miền Bắc",
-            "importance": 0.0383
+            "feature": "region__Miền Nam",
+            "label": "Vùng: Miền Nam",
+            "importance": 0.0389,
+            "direction": "giảm rủi ro"
           },
           {
             "feature": "tenure_days",
-            "importance": 0.0284
+            "label": "Khoảng cách đơn đầu – đơn cuối",
+            "importance": 0.0269,
+            "direction": "giảm rủi ro"
           },
           {
-            "feature": "ad_order_ratio",
-            "importance": 0.0244
+            "feature": "mean_interpurchase_days",
+            "label": "Chu kỳ mua lại trung bình",
+            "importance": 0.0245,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "completed_orders",
+            "label": "Số đơn giao thành công",
+            "importance": 0.0223,
+            "direction": "tăng rủi ro"
           },
           {
             "feature": "return_rate",
-            "importance": 0.0236
+            "label": "Tỷ lệ đơn hoàn trả",
+            "importance": 0.0195,
+            "direction": "tăng rủi ro"
           },
           {
-            "feature": "channel_TikTok Shop",
-            "importance": 0.0143
+            "feature": "orders_last_30d",
+            "label": "Số đơn 30 ngày gần nhất",
+            "importance": 0.0165,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "is_repeat_customer",
+            "label": "Khách đã mua lại",
+            "importance": 0.0141,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "primary_channel__Unknown/Other",
+            "label": "Kênh chính: Unknown/Other",
+            "importance": 0.0111,
+            "direction": "giảm rủi ro"
           },
           {
             "feature": "total_orders",
+            "label": "Tổng số đơn (Frequency)",
+            "importance": 0.0106,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "ad_order_ratio",
+            "label": "Tỷ lệ đơn từ quảng cáo",
+            "importance": 0.0075,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "region__Miền Trung",
+            "label": "Vùng: Miền Trung",
+            "importance": 0.0059,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "primary_channel__Website",
+            "label": "Kênh chính: Website",
+            "importance": 0.0044,
+            "direction": "tăng rủi ro"
+          },
+          {
+            "feature": "primary_channel__TikTok Shop",
+            "label": "Kênh chính: TikTok Shop",
+            "importance": 0.0023,
+            "direction": "tăng rủi ro"
+          },
+          {
+            "feature": "cancel_rate",
+            "label": "Tỷ lệ đơn bị hủy",
+            "importance": 0.0021,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "primary_channel__Facebook Fanpage",
+            "label": "Kênh chính: Facebook Fanpage",
+            "importance": 0.0019,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "num_sources",
+            "label": "Số fanpage/cửa hàng đã mua",
+            "importance": 0.0007,
+            "direction": "tăng rủi ro"
+          },
+          {
+            "feature": "num_categories",
+            "label": "Số ngành hàng đã mua",
+            "importance": 0.0005,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "cod_ratio",
+            "label": "Tỷ lệ đơn thanh toán COD",
+            "importance": 0.0004,
+            "direction": "tăng rủi ro"
+          },
+          {
+            "feature": "is_omnichannel",
+            "label": "Mua đa kênh",
+            "importance": 0.0001,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "num_channels",
+            "label": "Số kênh đã mua",
+            "importance": 0.0,
+            "direction": "không đơn điệu"
+          },
+          {
+            "feature": "channel_entropy",
+            "label": "Độ đa dạng kênh (entropy)",
+            "importance": 0.0,
+            "direction": "không đơn điệu"
+          },
+          {
+            "feature": "primary_channel_share",
+            "label": "Tỷ trọng kênh chính",
+            "importance": 0.0,
+            "direction": "không đơn điệu"
+          },
+          {
+            "feature": "primary_channel__Shopee",
+            "label": "Kênh chính: Shopee",
+            "importance": 0.0,
+            "direction": "không đơn điệu"
+          }
+        ],
+        "native_feature_importance": [
+          {
+            "feature": "recency_days",
+            "importance": 0.1614
+          },
+          {
+            "feature": "customer_age_days",
+            "importance": 0.1292
+          },
+          {
+            "feature": "processing_hours_mean",
+            "importance": 0.1018
+          },
+          {
+            "feature": "monetary_log",
+            "importance": 0.0823
+          },
+          {
+            "feature": "pending_rate",
+            "importance": 0.0764
+          },
+          {
+            "feature": "avg_order_value_log",
+            "importance": 0.07
+          },
+          {
+            "feature": "orders_last_7d",
+            "importance": 0.0606
+          },
+          {
+            "feature": "processing_hours_known",
+            "importance": 0.0547
+          },
+          {
+            "feature": "region__Miền Bắc",
+            "importance": 0.0384
+          },
+          {
+            "feature": "completed_rate",
+            "importance": 0.0331
+          },
+          {
+            "feature": "mean_interpurchase_days",
+            "importance": 0.0306
+          },
+          {
+            "feature": "tenure_days",
+            "importance": 0.0291
+          },
+          {
+            "feature": "completed_orders",
+            "importance": 0.0175
+          },
+          {
+            "feature": "orders_last_30d",
+            "importance": 0.0169
+          },
+          {
+            "feature": "region__Miền Nam",
+            "importance": 0.0169
+          },
+          {
+            "feature": "return_rate",
+            "importance": 0.0166
+          },
+          {
+            "feature": "is_repeat_customer",
             "importance": 0.0124
           },
           {
-            "feature": "region_Miền Nam",
-            "importance": 0.0121
+            "feature": "ad_order_ratio",
+            "importance": 0.0119
           },
           {
-            "feature": "completed_orders",
-            "importance": 0.0112
+            "feature": "primary_channel__Unknown/Other",
+            "importance": 0.0102
           },
           {
-            "feature": "channel_Unknown/Other",
-            "importance": 0.0091
+            "feature": "total_orders",
+            "importance": 0.0075
           },
           {
-            "feature": "channel_Facebook Fanpage",
-            "importance": 0.0082
+            "feature": "region__Miền Trung",
+            "importance": 0.0064
           },
           {
-            "feature": "region_Miền Trung",
-            "importance": 0.0077
+            "feature": "primary_channel__TikTok Shop",
+            "importance": 0.0041
+          },
+          {
+            "feature": "primary_channel__Facebook Fanpage",
+            "importance": 0.0034
+          },
+          {
+            "feature": "primary_channel__Website",
+            "importance": 0.0034
           },
           {
             "feature": "cancel_rate",
-            "importance": 0.005
+            "importance": 0.0024
           },
           {
-            "feature": "channel_Website",
-            "importance": 0.0029
+            "feature": "num_sources",
+            "importance": 0.002
           },
           {
-            "feature": "num_channels",
-            "importance": 0.0002
+            "feature": "cod_ratio",
+            "importance": 0.0006
+          },
+          {
+            "feature": "num_categories",
+            "importance": 0.0004
           },
           {
             "feature": "is_omnichannel",
-            "importance": 0.0002
+            "importance": 0.0001
           },
           {
-            "feature": "channel_Shopee",
+            "feature": "num_channels",
+            "importance": 0.0
+          },
+          {
+            "feature": "channel_entropy",
+            "importance": 0.0
+          },
+          {
+            "feature": "primary_channel_share",
+            "importance": 0.0
+          },
+          {
+            "feature": "primary_channel__Shopee",
             "importance": 0.0
           }
         ],
-        "train_seconds": 11.0
+        "importance_method": "SHAP (mean |value|, TreeExplainer)",
+        "class_balancing": "class_weight = balanced_subsample",
+        "imbalance_ablation": {
+          "cv_roc_auc_mean": 0.6574,
+          "cv_roc_auc_std": 0.023,
+          "test_roc_auc": 0.6199,
+          "test_balanced_accuracy": 0.5,
+          "test_retained_recall": 0.0
+        },
+        "train_seconds": 46.4,
+        "shap_seconds": 0.7
       },
       {
         "model": "XGBoost",
+        "family": "advanced",
         "best_params": {
-          "learning_rate": 0.05,
-          "max_depth": 3,
+          "learning_rate": 0.03,
+          "max_depth": 2,
+          "min_child_weight": 1,
           "n_estimators": 200
         },
-        "cv_roc_auc_mean": 0.6394,
+        "n_candidates": 24,
+        "cv_roc_auc_mean": 0.6612,
         "cv_roc_auc_std": 0.0254,
         "test": {
-          "accuracy": 0.6825,
-          "balanced_accuracy": 0.6111,
-          "precision": 0.9741,
-          "recall": 0.6883,
-          "f1_score": 0.8066,
-          "roc_auc": 0.6253,
-          "retained_precision": 0.0631,
-          "retained_recall": 0.534,
-          "retained_f1": 0.1128,
-          "retained_pr_auc": 0.0674,
+          "accuracy": 0.6685,
+          "balanced_accuracy": 0.5759,
+          "precision": 0.9704,
+          "recall": 0.6761,
+          "f1_score": 0.7969,
+          "roc_auc": 0.6103,
+          "retained_precision": 0.0546,
+          "retained_recall": 0.4757,
+          "retained_f1": 0.0979,
+          "retained_pr_auc": 0.0689,
           "confusion_matrix": {
-            "tn": 55,
-            "fp": 48,
-            "fn": 817,
-            "tp": 1804
+            "tn": 49,
+            "fp": 54,
+            "fn": 849,
+            "tp": 1772
           }
         },
         "feature_importance": [
           {
+            "feature": "pending_rate",
+            "label": "Tỷ lệ đơn đang xử lý",
+            "importance": 0.2354,
+            "direction": "giảm rủi ro"
+          },
+          {
             "feature": "recency_days",
-            "importance": 0.097
+            "label": "Số ngày từ đơn gần nhất (Recency)",
+            "importance": 0.2043,
+            "direction": "tăng rủi ro"
           },
           {
-            "feature": "region_Miền Bắc",
-            "importance": 0.085
-          },
-          {
-            "feature": "return_rate",
-            "importance": 0.0721
-          },
-          {
-            "feature": "total_orders",
-            "importance": 0.0707
-          },
-          {
-            "feature": "channel_TikTok Shop",
-            "importance": 0.0698
-          },
-          {
-            "feature": "channel_Facebook Fanpage",
-            "importance": 0.0636
-          },
-          {
-            "feature": "monetary_log",
-            "importance": 0.0607
-          },
-          {
-            "feature": "region_Miền Trung",
-            "importance": 0.0563
+            "feature": "region__Miền Bắc",
+            "label": "Vùng: Miền Bắc",
+            "importance": 0.1265,
+            "direction": "tăng rủi ro"
           },
           {
             "feature": "processing_hours_mean",
-            "importance": 0.055
+            "label": "Thời gian xử lý đơn TB (giờ)",
+            "importance": 0.0994,
+            "direction": "tăng rủi ro"
           },
           {
             "feature": "avg_order_value_log",
-            "importance": 0.055
+            "label": "Giá trị đơn trung bình",
+            "importance": 0.0601,
+            "direction": "tăng rủi ro"
           },
           {
-            "feature": "channel_Website",
-            "importance": 0.0538
-          },
-          {
-            "feature": "channel_Unknown/Other",
-            "importance": 0.0537
+            "feature": "monetary_log",
+            "label": "Giá trị đơn thành công (Monetary)",
+            "importance": 0.0447,
+            "direction": "tăng rủi ro"
           },
           {
             "feature": "tenure_days",
-            "importance": 0.0531
+            "label": "Khoảng cách đơn đầu – đơn cuối",
+            "importance": 0.0428,
+            "direction": "giảm rủi ro"
           },
           {
-            "feature": "region_Miền Nam",
-            "importance": 0.0507
+            "feature": "completed_rate",
+            "label": "Tỷ lệ đơn thành công",
+            "importance": 0.0273,
+            "direction": "tăng rủi ro"
           },
           {
-            "feature": "ad_order_ratio",
-            "importance": 0.041
+            "feature": "primary_channel__Unknown/Other",
+            "label": "Kênh chính: Unknown/Other",
+            "importance": 0.0266,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "customer_age_days",
+            "label": "Số ngày từ đơn đầu tiên",
+            "importance": 0.0237,
+            "direction": "tăng rủi ro"
+          },
+          {
+            "feature": "region__Miền Nam",
+            "label": "Vùng: Miền Nam",
+            "importance": 0.0231,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "mean_interpurchase_days",
+            "label": "Chu kỳ mua lại trung bình",
+            "importance": 0.0225,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "orders_last_7d",
+            "label": "Số đơn 7 ngày gần nhất",
+            "importance": 0.016,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "primary_channel__TikTok Shop",
+            "label": "Kênh chính: TikTok Shop",
+            "importance": 0.0141,
+            "direction": "tăng rủi ro"
+          },
+          {
+            "feature": "return_rate",
+            "label": "Tỷ lệ đơn hoàn trả",
+            "importance": 0.0113,
+            "direction": "tăng rủi ro"
+          },
+          {
+            "feature": "processing_hours_known",
+            "label": "Đã có đơn xử lý xong",
+            "importance": 0.0093,
+            "direction": "tăng rủi ro"
           },
           {
             "feature": "cancel_rate",
-            "importance": 0.0321
+            "label": "Tỷ lệ đơn bị hủy",
+            "importance": 0.0035,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "primary_channel__Facebook Fanpage",
+            "label": "Kênh chính: Facebook Fanpage",
+            "importance": 0.0023,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "ad_order_ratio",
+            "label": "Tỷ lệ đơn từ quảng cáo",
+            "importance": 0.0021,
+            "direction": "tăng rủi ro"
+          },
+          {
+            "feature": "orders_last_30d",
+            "label": "Số đơn 30 ngày gần nhất",
+            "importance": 0.0019,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "num_categories",
+            "label": "Số ngành hàng đã mua",
+            "importance": 0.0017,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "region__Miền Trung",
+            "label": "Vùng: Miền Trung",
+            "importance": 0.0011,
+            "direction": "giảm rủi ro"
+          },
+          {
+            "feature": "num_sources",
+            "label": "Số fanpage/cửa hàng đã mua",
+            "importance": 0.0002,
+            "direction": "tăng rủi ro"
+          },
+          {
+            "feature": "primary_channel__Website",
+            "label": "Kênh chính: Website",
+            "importance": 0.0002,
+            "direction": "tăng rủi ro"
+          },
+          {
+            "feature": "total_orders",
+            "label": "Tổng số đơn (Frequency)",
+            "importance": 0.0,
+            "direction": "không đơn điệu"
+          },
+          {
+            "feature": "is_repeat_customer",
+            "label": "Khách đã mua lại",
+            "importance": 0.0,
+            "direction": "không đơn điệu"
           },
           {
             "feature": "completed_orders",
-            "importance": 0.0301
+            "label": "Số đơn giao thành công",
+            "importance": 0.0,
+            "direction": "không đơn điệu"
+          },
+          {
+            "feature": "cod_ratio",
+            "label": "Tỷ lệ đơn thanh toán COD",
+            "importance": 0.0,
+            "direction": "không đơn điệu"
+          },
+          {
+            "feature": "num_channels",
+            "label": "Số kênh đã mua",
+            "importance": 0.0,
+            "direction": "không đơn điệu"
+          },
+          {
+            "feature": "is_omnichannel",
+            "label": "Mua đa kênh",
+            "importance": 0.0,
+            "direction": "không đơn điệu"
+          },
+          {
+            "feature": "channel_entropy",
+            "label": "Độ đa dạng kênh (entropy)",
+            "importance": 0.0,
+            "direction": "không đơn điệu"
+          },
+          {
+            "feature": "primary_channel_share",
+            "label": "Tỷ trọng kênh chính",
+            "importance": 0.0,
+            "direction": "không đơn điệu"
+          },
+          {
+            "feature": "primary_channel__Shopee",
+            "label": "Kênh chính: Shopee",
+            "importance": 0.0,
+            "direction": "không đơn điệu"
+          }
+        ],
+        "native_feature_importance": [
+          {
+            "feature": "pending_rate",
+            "importance": 0.1383
+          },
+          {
+            "feature": "recency_days",
+            "importance": 0.0835
+          },
+          {
+            "feature": "region__Miền Bắc",
+            "importance": 0.0574
+          },
+          {
+            "feature": "processing_hours_known",
+            "importance": 0.0548
+          },
+          {
+            "feature": "completed_rate",
+            "importance": 0.0546
+          },
+          {
+            "feature": "primary_channel__Facebook Fanpage",
+            "importance": 0.0512
+          },
+          {
+            "feature": "mean_interpurchase_days",
+            "importance": 0.0512
+          },
+          {
+            "feature": "orders_last_7d",
+            "importance": 0.0491
+          },
+          {
+            "feature": "monetary_log",
+            "importance": 0.0474
+          },
+          {
+            "feature": "tenure_days",
+            "importance": 0.0463
+          },
+          {
+            "feature": "orders_last_30d",
+            "importance": 0.0385
+          },
+          {
+            "feature": "primary_channel__Unknown/Other",
+            "importance": 0.0382
+          },
+          {
+            "feature": "region__Miền Nam",
+            "importance": 0.0367
+          },
+          {
+            "feature": "processing_hours_mean",
+            "importance": 0.0362
+          },
+          {
+            "feature": "avg_order_value_log",
+            "importance": 0.0361
+          },
+          {
+            "feature": "return_rate",
+            "importance": 0.0357
+          },
+          {
+            "feature": "customer_age_days",
+            "importance": 0.0326
+          },
+          {
+            "feature": "primary_channel__TikTok Shop",
+            "importance": 0.031
+          },
+          {
+            "feature": "num_categories",
+            "importance": 0.0204
+          },
+          {
+            "feature": "cancel_rate",
+            "importance": 0.0193
+          },
+          {
+            "feature": "ad_order_ratio",
+            "importance": 0.0159
+          },
+          {
+            "feature": "region__Miền Trung",
+            "importance": 0.0154
+          },
+          {
+            "feature": "num_sources",
+            "importance": 0.0072
+          },
+          {
+            "feature": "primary_channel__Website",
+            "importance": 0.0027
+          },
+          {
+            "feature": "total_orders",
+            "importance": 0.0
+          },
+          {
+            "feature": "is_repeat_customer",
+            "importance": 0.0
+          },
+          {
+            "feature": "completed_orders",
+            "importance": 0.0
+          },
+          {
+            "feature": "cod_ratio",
+            "importance": 0.0
           },
           {
             "feature": "num_channels",
@@ -611,15 +1457,33 @@
             "importance": 0.0
           },
           {
-            "feature": "channel_Shopee",
+            "feature": "channel_entropy",
+            "importance": 0.0
+          },
+          {
+            "feature": "primary_channel_share",
+            "importance": 0.0
+          },
+          {
+            "feature": "primary_channel__Shopee",
             "importance": 0.0
           }
         ],
-        "train_seconds": 1.6
+        "importance_method": "SHAP (mean |value|, TreeExplainer)",
+        "class_balancing": "scale_pos_weight = n_neg/n_pos",
+        "imbalance_ablation": {
+          "cv_roc_auc_mean": 0.6657,
+          "cv_roc_auc_std": 0.02,
+          "test_roc_auc": 0.6093,
+          "test_balanced_accuracy": 0.5,
+          "test_retained_recall": 0.0
+        },
+        "train_seconds": 5.6,
+        "shap_seconds": 0.0
       }
     ],
     "inference_defaults": {
-      "processing_hours_mean": 139.75
+      "processing_hours_mean": 138.64
     }
   },
   "rfm": {

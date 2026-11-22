@@ -7,7 +7,7 @@ import {
   DSSRequest,
   DSSResponse
 } from '../types/customer';
-import { ModelMetrics } from '../types/metrics';
+import { AnalyticsOverview, ModelMetrics } from '../types/metrics';
 
 export const API_ROOT_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
 const API_BASE_URL = `${API_ROOT_URL}/api`;
@@ -104,5 +104,11 @@ export const evaluateBatchDSS = async (data: DSSRequest[]): Promise<DSSResponse[
 
 export const getModelMetrics = async (): Promise<ModelMetrics> => {
   const response = await apiClient.get<ModelMetrics>('/metrics');
+  return response.data;
+};
+
+/** Số liệu BI tổng hợp từ dữ liệu thật (cần đăng nhập) */
+export const getAnalyticsOverview = async (): Promise<AnalyticsOverview> => {
+  const response = await apiClient.get<AnalyticsOverview>('/analytics/overview');
   return response.data;
 };

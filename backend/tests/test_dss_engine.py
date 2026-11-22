@@ -13,7 +13,7 @@ from backend.app.core.dss_engine import (
     normalize_churn_pct,
     normalize_segment,
 )
-from backend.app.core.features import SEGMENT_LABELS
+from backend.ml.feature_engineering import SEGMENT_LABELS
 
 SEGMENTS = [VIP, POTENTIAL, NEEDS_ATTENTION, AT_RISK, UNKNOWN]
 # Phủ toàn bộ biên ngưỡng: 0, <20, 20, <40, 40, giữa, 70, >70, 100

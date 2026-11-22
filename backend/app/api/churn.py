@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/churn", tags=["Churn Prediction"])
 @router.post("/predict", response_model=ChurnPredictionResponse)
 async def predict_churn(payload: ChurnPredictionRequest):
     """
-    Dự đoán xác suất Churn bằng mô hình tốt nhất từ train_pipeline.py (xem /api/metrics) và lưu vào MongoDB.
+    Dự đoán xác suất Churn bằng mô hình RF/XGBoost tốt nhất (xem /api/metrics), kèm top lý do ảnh hưởng (SHAP), và lưu vào MongoDB.
     """
     try:
         res = ml_manager.predict_churn_risk(dump_model(payload))

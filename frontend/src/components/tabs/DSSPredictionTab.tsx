@@ -25,7 +25,8 @@ export const DSSPredictionTab: React.FC = () => {
   const [returnedOrders, setReturnedOrders] = useState<number>(1);
   const [cancelledOrders, setCancelledOrders] = useState<number>(0);
   const [adOrders, setAdOrders] = useState<number>(1);
-  const [numChannels, setNumChannels] = useState<number>(1);
+  const [ordersLast30d, setOrdersLast30d] = useState<number>(2);
+  const [ordersLast7d, setOrdersLast7d] = useState<number>(0);
   const [tenureDays, setTenureDays] = useState<number>(15);
   const [channel, setChannel] = useState<SalesChannel>('Facebook Fanpage');
   const [region, setRegion] = useState<Region>('Miền Nam');
@@ -52,7 +53,8 @@ export const DSSPredictionTab: React.FC = () => {
           returned_orders: returnedOrders,
           cancelled_orders: cancelledOrders,
           ad_orders: adOrders,
-          num_channels: numChannels,
+          orders_last_30d: ordersLast30d,
+          orders_last_7d: ordersLast7d,
           tenure_days: tenureDays,
           primary_channel: channel,
           region,
@@ -108,8 +110,9 @@ export const DSSPredictionTab: React.FC = () => {
             <NumberField label="Đơn từ quảng cáo:" value={adOrders} onChange={setAdOrders} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <NumberField label="Số kênh đã mua:" value={numChannels} onChange={setNumChannels} min={1} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+            <NumberField label="Đơn trong 30 ngày:" value={ordersLast30d} onChange={setOrdersLast30d} />
+            <NumberField label="Đơn trong 7 ngày:" value={ordersLast7d} onChange={setOrdersLast7d} />
             <NumberField label="Tenure (ngày đơn đầu → gần nhất):" value={tenureDays} onChange={setTenureDays} step={0.5} />
           </div>
 
@@ -173,6 +176,22 @@ export const DSSPredictionTab: React.FC = () => {
             </div>
           ) : (
             <div style={{ color: '#6b7280', fontSize: '0.9rem' }}>Chưa có kết quả dự đoán Churn.</div>
+          )}
+          {churnRes && churnRes.top_factors?.length > 0 && (
+            <div style={{ marginTop: '14px' }}>
+              <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>Lý do ảnh hưởng chính (SHAP):</div>
+              <div className="shap-factor-list">
+                {churnRes.top_factors.map((f) => (
+                  <div key={f.feature} className={`shap-factor ${f.shap_value > 0 ? 'up' : 'down'}`}>
+                    <span>
+                      <strong>{f.shap_value > 0 ? '▲' : '▼'} {f.label}</strong>
+                      <span style={{ color: '#9ca3af' }}> = {Number.isInteger(f.value) ? f.value : f.value.toFixed(2)}</span>
+                    </span>
+                    <span style={{ color: '#9ca3af', whiteSpace: 'nowrap' }}>{f.effect} ({f.shap_value > 0 ? '+' : ''}{f.shap_value.toFixed(3)})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
 

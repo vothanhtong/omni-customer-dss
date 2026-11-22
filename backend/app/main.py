@@ -24,6 +24,7 @@ try:
     from backend.app.api.dss import router as dss_router
     from backend.app.api.auth import router as auth_router
     from backend.app.api.metrics import router as metrics_router
+    from backend.app.api.analytics import router as analytics_router
 except ImportError:
     from app.core.ml_models import ml_manager
     from app.core.database import db_manager
@@ -33,6 +34,7 @@ except ImportError:
     from app.api.dss import router as dss_router
     from app.api.auth import router as auth_router
     from app.api.metrics import router as metrics_router
+    from app.api.analytics import router as analytics_router
 
 
 @asynccontextmanager
@@ -75,6 +77,7 @@ app.include_router(rfm_router)
 app.include_router(churn_router)
 app.include_router(dss_router)
 app.include_router(metrics_router)
+app.include_router(analytics_router)
 
 
 @app.get("/", tags=["Health Check"])

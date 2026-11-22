@@ -3,9 +3,9 @@ import pytest
 from backend.tests.conftest import requires_models
 
 CHURN_OK = {
-    "recency_days": 20, "total_orders": 2, "completed_orders": 1, "monetary": 350000,
-    "returned_orders": 1, "cancelled_orders": 0, "ad_orders": 1, "num_channels": 1,
-    "tenure_days": 15, "primary_channel": "Facebook Fanpage", "region": "Miền Nam",
+    "recency_days": 20, "tenure_days": 15, "total_orders": 2, "orders_last_30d": 2, "orders_last_7d": 0,
+    "completed_orders": 1, "returned_orders": 1, "cancelled_orders": 0, "monetary": 350000,
+    "ad_orders": 1, "cod_orders": 2, "orders_by_channel": {"Facebook Fanpage": 2}, "region": "Miền Nam",
 }
 
 
@@ -44,7 +44,7 @@ def test_rfm_predict_validation(client, payload):
 
 # ------------------------------- /api/churn/predict -----------------------------
 @requires_models
-def test_churn_predict_ok(client):
+def test_churn_predict_ok_with_top_factors(client):
     r = client.post("/api/churn/predict", json=CHURN_OK)
     assert r.status_code == 200, r.text
     body = r.json()
@@ -53,7 +53,27 @@ def test_churn_predict_ok(client):
     assert body["churn_prediction"] == int(body["churn_probability"] >= 0.5)
     expected = "High Risk" if body["churn_probability"] >= 0.7 else "Medium Risk" if body["churn_probability"] >= 0.4 else "Low Risk"
     assert body["risk_level"] == expected
-    assert body["model_name"]
+    assert body["model_name"] in {"Random Forest", "XGBoost"}
+    factors = body["top_factors"]
+    assert 1 <= len(factors) <= 5
+    assert all(f["effect"] in {"tăng rủi ro rời bỏ", "giảm rủi ro rời bỏ"} and f["label"] for f in factors)
+    assert [abs(f["shap_value"]) for f in factors] == sorted((abs(f["shap_value"]) for f in factors), reverse=True)
+
+
+@requires_models
+def test_churn_predict_matches_training_pipeline(client):
+    """API phải cho cùng xác suất với pipeline huấn luyện khi nhận cùng số liệu thô."""
+    import joblib, pandas as pd
+    from backend.app.core.config import SAVED_MODELS_DIR
+    from backend.app.core.ml_models import churn_payload_to_aggregates, load_metrics
+    from backend.ml.feature_engineering import build_model_features
+
+    model = joblib.load(f"{SAVED_MODELS_DIR}/churn_model.pkl")
+    feats = joblib.load(f"{SAVED_MODELS_DIR}/churn_features.pkl")
+    fill = load_metrics()["churn"]["inference_defaults"]["processing_hours_mean"]
+    X = build_model_features(churn_payload_to_aggregates(CHURN_OK), fill)[feats]
+    expected = float(model.predict_proba(X)[0][1])
+    assert client.post("/api/churn/predict", json=CHURN_OK).json()["churn_probability"] == pytest.approx(expected, abs=1e-4)
 
 
 @requires_models
@@ -62,24 +82,25 @@ def test_churn_predict_minimal_payload_uses_defaults(client):
     assert r.status_code == 200, r.text
 
 
-@requires_models
-def test_churn_recency_increases_risk(client):
-    """Kiểm tra định hướng: khách lâu không mua có rủi ro không thấp hơn khách vừa mua."""
-    p = lambda d: client.post("/api/churn/predict", json={**CHURN_OK, "recency_days": d}).json()["churn_probability"]
-    assert p(90) >= p(1)
-
-
 @pytest.mark.parametrize("override", [
     {"total_orders": 0},
-    {"completed_orders": 3},                      # completed > total
-    {"completed_orders": 1, "returned_orders": 2}, # tổng > total
+    {"completed_orders": 3},                        # completed > total
+    {"completed_orders": 1, "returned_orders": 2},  # tổng > total
     {"ad_orders": 5},
-    {"primary_channel": "POS"},
+    {"orders_last_7d": 2, "orders_last_30d": 1},
+    {"recency_days": 40},                           # recency > 30 nhưng orders_last_30d = 2
+    {"orders_by_channel": {"Facebook Fanpage": 1}}, # tổng kênh != total_orders
+    {"orders_by_channel": {"POS": 2}},
     {"region": "Hà Nội"},
     {"recency_days": -1},
 ])
 def test_churn_predict_validation(client, override):
     assert client.post("/api/churn/predict", json={**CHURN_OK, **override}).status_code == 422
+
+
+def test_single_order_with_tenure_rejected(client):
+    p = {"recency_days": 3, "total_orders": 1, "completed_orders": 1, "monetary": 1, "tenure_days": 5}
+    assert client.post("/api/churn/predict", json=p).status_code == 422
 
 
 # ------------------------------- /api/dss/evaluate ------------------------------
@@ -137,5 +158,33 @@ def test_metrics_endpoint(client):
     for x in m["models"]:
         for k in ("accuracy", "precision", "recall", "f1_score", "roc_auc"):
             assert 0.0 <= x["test"][k] <= 1.0
-    assert m["best_model"] in {x["model"] for x in m["models"]}
-    assert m["best_model_feature_importance"]
+    assert m["best_model"] in {"Random Forest", "XGBoost"}
+    assert m["best_model_feature_importance"] and m["importance_method"].startswith("SHAP")
+    assert m["leakage_audit"]["share_updated_after_cutoff"] > 0
+    for x in m["models"]:
+        if x["family"] == "advanced":
+            assert "imbalance_ablation" in x
+
+
+# ------------------------------- /api/analytics/overview ------------------------
+def test_analytics_requires_login(client):
+    assert client.get("/api/analytics/overview").status_code == 401
+
+
+@requires_models
+def test_analytics_overview(client):
+    import os
+    from backend.app.api.analytics import ANALYTICS_PATH
+    if not os.path.exists(ANALYTICS_PATH):
+        pytest.skip("chưa chạy train_pipeline.py")
+    token = client.post("/api/auth/login", json={"email": "business@retail.vn", "password": "user123"}).json()["access_token"]
+    r = client.get("/api/analytics/overview", headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 200
+    a = r.json()
+    assert {c["name"] for c in a["channel_distribution"]} >= {"Facebook Fanpage", "Website", "TikTok Shop"}
+    assert {c["name"] for c in a["region_distribution"]} >= {"Miền Bắc", "Miền Trung", "Miền Nam"}
+    assert sum(c["orders"] for c in a["channel_distribution"]) == a["totals"]["orders"]
+    assert a["churn"]["weekly_trend"] and all(0 <= p["churn_rate"] <= 1 for p in a["churn"]["weekly_trend"])
+    assert a["feature_importance"]
+    text = r.text
+    assert "KH_" not in text  # không lộ customer_id

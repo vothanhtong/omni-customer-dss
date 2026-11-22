@@ -17,17 +17,31 @@ export type Region = 'Miền Bắc' | 'Miền Nam' | 'Miền Trung' | 'Chưa xá
 
 export interface ChurnRequest {
   recency_days: number;
+  tenure_days?: number;
   total_orders: number;
+  orders_last_7d?: number | null;
+  orders_last_30d?: number | null;
   completed_orders: number;
-  monetary: number;
   returned_orders?: number;
   cancelled_orders?: number;
+  monetary: number;
   ad_orders?: number;
+  cod_orders?: number | null;
+  num_categories?: number;
+  num_sources?: number;
   processing_hours_mean?: number | null;
-  num_channels?: number;
-  tenure_days?: number;
+  orders_by_channel?: Partial<Record<SalesChannel, number>> | null;
   primary_channel?: SalesChannel;
   region?: Region;
+}
+
+/** Một yếu tố ảnh hưởng (SHAP) tới xác suất churn của khách này */
+export interface ChurnFactor {
+  feature: string;
+  label: string;
+  value: number;
+  shap_value: number;
+  effect: string;
 }
 
 export interface ChurnResponse {
@@ -36,6 +50,7 @@ export interface ChurnResponse {
   churn_prediction: number;
   risk_level: 'High Risk' | 'Medium Risk' | 'Low Risk' | string;
   model_name: string;
+  top_factors: ChurnFactor[];
 }
 
 export interface DSSRequest {

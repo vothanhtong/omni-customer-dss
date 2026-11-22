@@ -11,12 +11,9 @@ from typing import Any, Dict, Optional
 import joblib
 import pandas as pd
 
-try:
-    from backend.app.core.config import SAVED_MODELS_DIR
-    from backend.app.core.features import churn_feature_frame, rfm_feature_frame
-except ImportError:
-    from app.core.config import SAVED_MODELS_DIR
-    from app.core.features import churn_feature_frame, rfm_feature_frame
+from backend.app.core.config import SAVED_MODELS_DIR
+from backend.ml.feature_engineering import CHANNEL_COUNT_COLS, build_model_features, rfm_feature_frame
+from backend.ml.explain import explain_rows, make_explainer
 
 METRICS_PATH = os.path.join(SAVED_MODELS_DIR, "model_metrics.json")
 RISK_HIGH, RISK_MEDIUM = 0.7, 0.4
@@ -26,22 +23,48 @@ _ARTIFACTS = {
     "scaler_rfm": "scaler_rfm.pkl",
     "segment_map": "segment_map.pkl",
     "churn_model": "churn_model.pkl",
-    "scaler_churn": "scaler_churn.pkl",
     "churn_features": "churn_features.pkl",
 }
 
 
-# Giá trị mặc định cho các trường tùy chọn (đồng bộ với ChurnPredictionRequest)
-_CHURN_INPUT_DEFAULTS: Dict[str, Any] = {
-    "returned_orders": 0,
-    "cancelled_orders": 0,
-    "ad_orders": 0,
-    "processing_hours_mean": None,
-    "num_channels": 1,
-    "tenure_days": 0.0,
-    "primary_channel": "Facebook Fanpage",
-    "region": "Miền Nam",
-}
+def churn_payload_to_aggregates(payload: Dict[str, Any]) -> pd.DataFrame:
+    """
+    Chuyển payload API (ChurnPredictionRequest) -> 1 dòng số liệu thô giống build_customer_aggregates().
+    Trường bỏ trống được suy ra hợp lý (ghi chú trong schema).
+    """
+    total = int(payload["total_orders"])
+    recency = float(payload["recency_days"])
+    tenure = float(payload.get("tenure_days") or 0.0)
+    age = recency + tenure
+
+    by_channel = payload.get("orders_by_channel") or {payload.get("primary_channel") or "Facebook Fanpage": total}
+    last_30 = payload.get("orders_last_30d")
+    if last_30 is None:
+        last_30 = total if age <= 30 else (1 if recency <= 30 else 0)
+    last_7 = payload.get("orders_last_7d")
+    if last_7 is None:
+        last_7 = total if age <= 7 else (1 if recency <= 7 else 0)
+
+    row = {
+        "recency_days": recency,
+        "tenure_days": tenure,
+        "total_orders": total,
+        "orders_last_7d": min(int(last_7), total),
+        "orders_last_30d": min(int(last_30), total),
+        "completed_orders": int(payload["completed_orders"]),
+        "returned_orders": int(payload.get("returned_orders") or 0),
+        "cancelled_orders": int(payload.get("cancelled_orders") or 0),
+        "monetary": float(payload["monetary"]),
+        "ad_orders": int(payload.get("ad_orders") or 0),
+        "cod_orders": int(payload["cod_orders"]) if payload.get("cod_orders") is not None else total,
+        "num_categories": int(payload.get("num_categories") or 1),
+        "num_sources": int(payload.get("num_sources") or 1),
+        "processing_hours_mean": payload.get("processing_hours_mean"),
+        "region": payload.get("region") or "Miền Nam",
+    }
+    for channel, col in CHANNEL_COUNT_COLS.items():
+        row[col] = int(by_channel.get(channel, 0))
+    return pd.DataFrame([row])
 
 
 class ModelNotReadyError(RuntimeError):
@@ -61,8 +84,8 @@ class MLModelManager:
         self.scaler_rfm = None
         self.segment_map = None
         self.churn_model = None
-        self.scaler_churn = None
         self.churn_features = None
+        self.churn_explainer = None
         self.churn_model_name = "unknown"
         self.inference_defaults: Dict[str, float] = {}
 
@@ -75,6 +98,11 @@ class MLModelManager:
         try:
             for attr, fname in _ARTIFACTS.items():
                 setattr(self, attr, joblib.load(os.path.join(SAVED_MODELS_DIR, fname)))
+            try:
+                self.churn_explainer = make_explainer(self.churn_model)
+            except Exception as e:  # SHAP không khả dụng -> vẫn dự đoán, không trả lý do
+                self.churn_explainer = None
+                print(f"⚠️ Không khởi tạo được SHAP explainer: {e}")
             metrics = load_metrics() or {}
             churn_meta = metrics.get("churn", {})
             self.churn_model_name = churn_meta.get("best_model", type(self.churn_model).__name__)
@@ -101,17 +129,16 @@ class MLModelManager:
             "segment_name": self.segment_map.get(cluster_id, f"Cluster {cluster_id}"),
         }
 
-    def predict_churn_risk(self, customer: Dict[str, Any]) -> dict:
+    def predict_churn_risk(self, customer: Dict[str, Any], top_k: int = 5) -> dict:
         """
-        Dự đoán xác suất churn từ đặc trưng hành vi thô (xem ChurnPredictionRequest).
+        Dự đoán xác suất churn từ số liệu hành vi (xem ChurnPredictionRequest),
+        kèm các lý do ảnh hưởng chính (SHAP) cho riêng khách hàng này.
         """
-        self._ensure("churn_model", "scaler_churn", "churn_features")
-        row = {**_CHURN_INPUT_DEFAULTS, **{k: v for k, v in customer.items() if v is not None}}
-        if row.get("processing_hours_mean") is None:
-            row["processing_hours_mean"] = float(self.inference_defaults.get("processing_hours_mean", 0.0))
-
-        X = churn_feature_frame(pd.DataFrame([row]))[self.churn_features]
-        churn_prob = float(self.churn_model.predict_proba(self.scaler_churn.transform(X))[0][1])
+        self._ensure("churn_model", "churn_features")
+        agg = churn_payload_to_aggregates(customer)
+        fill = float(self.inference_defaults.get("processing_hours_mean", 0.0))
+        X = build_model_features(agg, processing_hours_fill=fill)[self.churn_features]
+        churn_prob = float(self.churn_model.predict_proba(X)[0][1])
 
         if churn_prob >= RISK_HIGH:
             risk_level = "High Risk"
@@ -120,12 +147,14 @@ class MLModelManager:
         else:
             risk_level = "Low Risk"
 
+        top_factors = explain_rows(self.churn_explainer, X, top_k=top_k)[0] if self.churn_explainer is not None else []
         return {
             "churn_probability": round(churn_prob, 4),
             "churn_probability_pct": round(churn_prob * 100.0, 2),
             "churn_prediction": int(churn_prob >= 0.5),
             "risk_level": risk_level,
             "model_name": self.churn_model_name,
+            "top_factors": top_factors,
         }
 
 

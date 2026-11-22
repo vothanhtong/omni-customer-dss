@@ -18,7 +18,7 @@ from typing import Any, Dict, FrozenSet, List, Optional
 LEVEL_PRIORITY: Dict[str, int] = {"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
 
 # ---------------------------------------------------------------------------
-# Phân khúc: tên chuẩn đồng bộ với nhãn K-Means (backend/app/core/features.py::SEGMENT_LABELS)
+# Phân khúc: tên chuẩn đồng bộ với nhãn K-Means (backend/ml/feature_engineering.py::SEGMENT_LABELS)
 # ---------------------------------------------------------------------------
 VIP = "VIP"
 POTENTIAL = "Tiềm năng"

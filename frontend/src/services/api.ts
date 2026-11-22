@@ -5,7 +5,10 @@ import {
   ChurnRequest,
   ChurnResponse,
   DSSRequest,
-  DSSResponse
+  DSSResponse,
+  CustomerAction,
+  HighRiskPage,
+  HighRiskQuery
 } from '../types/customer';
 import { AnalyticsOverview, ModelMetrics } from '../types/metrics';
 
@@ -110,5 +113,23 @@ export const getModelMetrics = async (): Promise<ModelMetrics> => {
 /** Số liệu BI tổng hợp từ dữ liệu thật (cần đăng nhập) */
 export const getAnalyticsOverview = async (): Promise<AnalyticsOverview> => {
   const response = await apiClient.get<AnalyticsOverview>('/analytics/overview');
+  return response.data;
+};
+
+/** Danh sách khách cảnh báo rủi ro (dữ liệu thật đã chấm điểm, không chứa customer_id gốc) */
+export const getHighRiskCustomers = async (q: HighRiskQuery): Promise<HighRiskPage> => {
+  const params = new URLSearchParams();
+  q.alert_level.forEach((l) => params.append('alert_level', l));
+  if (q.segment) params.set('segment', q.segment);
+  if (q.channel) params.set('channel', q.channel);
+  if (q.region) params.set('region', q.region);
+  params.set('page', String(q.page));
+  params.set('page_size', String(q.page_size));
+  const response = await apiClient.get<HighRiskPage>('/customers/high-risk', { params });
+  return response.data;
+};
+
+export const triggerCustomerAction = async (ref: string, action: string, note?: string): Promise<CustomerAction> => {
+  const response = await apiClient.post<CustomerAction>(`/customers/${encodeURIComponent(ref)}/actions`, { action, note });
   return response.data;
 };

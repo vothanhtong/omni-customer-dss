@@ -81,3 +81,51 @@ export interface CustomerSummary {
   churn_risk_pct: number;
   alert_level: string;
 }
+
+/* ---------------- /api/customers/high-risk ---------------- */
+export type AlertLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+
+export interface CustomerAction {
+  action: string;
+  note?: string | null;
+  triggered_by: string;
+  triggered_at: string;
+  persisted: boolean;   // false = MongoDB offline, chỉ lưu tạm trong bộ nhớ server
+}
+
+export interface HighRiskCustomer {
+  ref: string;          // mã tham chiếu mờ (không phải customer_id gốc)
+  display_id: string;   // ID đã che, ví dụ KH_0908***444
+  segment: string;
+  churn_prob_pct: number;
+  recency_days: number;
+  frequency: number;
+  monetary: number;
+  channel: string;
+  region: string;
+  alert_level: AlertLevel;
+  warnings: string[];
+  recommendations: string[];
+  matched_rules: string[];
+  last_action: CustomerAction | null;
+}
+
+export interface HighRiskPage {
+  total: number;
+  page: number;
+  page_size: number;
+  items: HighRiskCustomer[];
+  alert_counts: Record<AlertLevel, number>;
+  population: number;
+  facets: { segments: string[]; channels: string[]; regions: string[] };
+  data_note: string;
+}
+
+export interface HighRiskQuery {
+  alert_level: AlertLevel[];
+  segment?: string;
+  channel?: string;
+  region?: string;
+  page: number;
+  page_size: number;
+}

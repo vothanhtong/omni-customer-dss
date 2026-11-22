@@ -160,6 +160,37 @@ class MongoDBManager:
             logger.error(f"Lỗi khi lấy DSS logs từ MongoDB: {e}")
             return []
 
+    # --- Hành động chăm sóc khách hàng (cảnh báo rủi ro cao) ---
+
+    async def save_customer_action(self, record: Dict[str, Any]) -> bool:
+        """Lưu hành động CSKH vào collection 'customer_actions' (chỉ lưu ref mờ, không lưu customer_id gốc)."""
+        if not self.is_connected or self.db is None:
+            return False
+        try:
+            if self.driver_type == "Motor (Async)":
+                await self.db["customer_actions"].insert_one(dict(record))
+            else:
+                self.db["customer_actions"].insert_one(dict(record))
+            return True
+        except Exception as e:
+            logger.error(f"Lỗi khi lưu customer action vào MongoDB: {e}")
+            return False
+
+    async def get_customer_actions(self, refs: List[str]) -> Dict[str, Dict[str, Any]]:
+        """Hành động MỚI NHẤT theo từng ref."""
+        if not refs or not self.is_connected or self.db is None:
+            return {}
+        try:
+            query = {"ref": {"$in": list(refs)}}
+            if self.driver_type == "Motor (Async)":
+                docs = await self.db["customer_actions"].find(query, {"_id": 0}).sort("triggered_at", 1).to_list(length=None)
+            else:
+                docs = list(self.db["customer_actions"].find(query, {"_id": 0}).sort("triggered_at", 1))
+            return {d["ref"]: d for d in docs}  # sort tăng dần -> bản ghi sau ghi đè -> mới nhất
+        except Exception as e:
+            logger.error(f"Lỗi khi lấy customer actions từ MongoDB: {e}")
+            return {}
+
     # --- User Management in MongoDB ---
 
     async def create_user(self, user_data: Dict[str, Any]) -> bool:
